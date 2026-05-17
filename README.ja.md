@@ -1,5 +1,7 @@
 # Tierra — ブラウザ完結の人工生命シミュレーター
 
+> [Claude Opus 4.7](https://www.anthropic.com/news/claude-opus-4) と [Claude Code](https://www.anthropic.com/claude-code) を使って共同制作しました。
+
 Thomas Ray が 1990 年代初頭に作った **Tierra** にインスパイアされた、単一 HTML ファイルで動く人工生命シミュレーターです。32 命令の仮想機械語で書かれた自己複製プログラムが共有メモリ上で CPU 時間とメモリを奪い合い、コピー時のビット反転と自然選択によって寄生体・超寄生体・縮退レプリケーターなどが自然発生します。
 
 **🔗 デモ:** [asari-mtr.github.io/tierra](https://asari-mtr.github.io/tierra/)

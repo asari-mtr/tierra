@@ -1,5 +1,7 @@
 # Tierra — Browser-based Artificial Life
 
+> Built collaboratively with [Claude Opus 4.7](https://www.anthropic.com/news/claude-opus-4) via [Claude Code](https://www.anthropic.com/claude-code).
+
 A single-file, browser-based artificial life simulator inspired by **Tierra**, the seminal digital evolution system created by Thomas Ray in the early 1990s. Self-replicating programs written in a 32-instruction virtual machine compete for CPU time and memory; bit-flip mutations and natural selection drive open-ended evolution — parasites, hyper-parasites, and degenerate replicators all emerge unprompted.
 
 **🔗 Live demo:** [asari-mtr.github.io/tierra](https://asari-mtr.github.io/tierra/)
