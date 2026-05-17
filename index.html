@@ -1,0 +1,2526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title data-i18n="title">Gene Soup — Tierra風人工生命シミュレーター</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #161616;
+    --border: #2a2a2a;
+    --text: #eee;
+    --dim: #888;
+    --accent: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    margin: 0;
+    padding: 16px;
+    min-height: 100vh;
+  }
+  header { margin-bottom: 14px; }
+  h1 {
+    font-size: 1.3em;
+    margin: 0 0 4px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .subtitle { font-size: 0.78em; color: var(--dim); }
+  .stats {
+    display: flex;
+    gap: 18px;
+    font-size: 0.8em;
+    color: #aaa;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .stats span b { color: #fff; font-weight: 600; }
+  main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .row-top {
+    display: grid;
+    grid-template-columns: 280px auto 300px;
+    gap: 16px;
+    align-items: start;
+  }
+  .col-controls, .col-creatures, .col-soup {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+  #soup {
+    background: #000;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: block;
+  }
+  aside { display: flex; flex-direction: column; gap: 12px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+  }
+  .panel h3 {
+    margin: 0 0 10px;
+    font-size: 0.85em;
+    color: #ddd;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+  .control-row label {
+    font-size: 0.78em;
+    color: #bbb;
+    flex: 0 0 auto;
+  }
+  .control-row input[type="range"] {
+    flex: 1;
+    min-width: 0;
+  }
+  .control-row .val {
+    font-size: 0.72em;
+    color: var(--accent);
+    font-family: "SF Mono", Menlo, monospace;
+    min-width: 56px;
+    text-align: right;
+  }
+  .button-row { display: flex; gap: 6px; margin-top: 4px; }
+  button {
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #444;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.78em;
+    flex: 1;
+    transition: background 0.1s;
+  }
+  button:hover { background: #3a3a3a; }
+  button.primary { background: #1f6f3f; border-color: #2a8a4f; }
+  button.primary:hover { background: #2a8a4f; }
+  button.danger { background: #6f1f1f; border-color: #8a2a2a; }
+  button.danger:hover { background: #8a2a2a; }
+  .creature-list {
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 0.72em;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .creature-row {
+    padding: 3px 4px;
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .creature-row .cid { color: var(--accent); }
+  .creature-row .meta { color: var(--dim); }
+  .creature-row { cursor: pointer; }
+  .creature-row:hover { background: #1f1f1f; }
+  .creature-row.selected { background: #2a3a2a; }
+  .creature-row .tag {
+    font-size: 0.95em;
+    font-weight: 600;
+    min-width: 32px;
+  }
+  .list-header {
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 4px 2px;
+    border-top: 1px solid #222;
+    margin-top: 4px;
+  }
+  .list-header:first-child { border-top: none; margin-top: 0; padding-top: 2px; }
+  .creature-list {
+    max-height: 320px;
+  }
+  .lineage {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px dashed #333;
+  }
+  .lineage-title {
+    font-size: 0.7em;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .lineage-row {
+    display: flex;
+    gap: 6px;
+    font-size: 0.7em;
+    font-family: "SF Mono", Menlo, monospace;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .lineage-row:hover { background: #1f2a1f; }
+  #custom-genome {
+    width: 100%;
+    height: 80px;
+    background: #0a0a0a;
+    color: #ddd;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 6px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.68em;
+    margin-top: 4px;
+    resize: vertical;
+    line-height: 1.4;
+  }
+  #inject-status {
+    margin-top: 6px;
+    font-size: 0.72em;
+    min-height: 1em;
+  }
+  #inject-status.ok { color: var(--accent); }
+  #inject-status.err { color: #f87171; }
+  .comparison-panel {
+    padding: 12px;
+  }
+  .comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .comparison-header h3 {
+    font-size: 0.85em;
+    color: #ddd;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .comparison-header button {
+    padding: 4px 8px;
+    font-size: 0.72em;
+    flex: 0 0 auto;
+  }
+  #comparison-content {
+    display: flex;
+    overflow-x: auto;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.7em;
+    background: #0a0a0a;
+    border-radius: 4px;
+    border: 1px solid #222;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .compare-col {
+    padding: 6px 8px;
+    border-right: 1px solid #1f1f1f;
+    min-width: 140px;
+    flex: 0 0 auto;
+  }
+  .compare-col-header {
+    font-size: 0.95em;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 4px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+    cursor: pointer;
+  }
+  .compare-col-header:hover { color: var(--accent); }
+  .compare-byte {
+    padding: 0 4px;
+    white-space: nowrap;
+    border-radius: 2px;
+    display: block;
+  }
+  .compare-byte.diff { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+  .compare-byte.same { color: #888; }
+  .compare-byte.missing { color: #333; }
+  .compare-byte.sub { background: rgba(234, 179, 8, 0.18); color: #fde047; }
+  .compare-byte.del { background: rgba(239, 68, 68, 0.22); color: #fca5a5; }
+  .compare-byte.ins { background: rgba(34, 197, 94, 0.22); color: #86efac; }
+  .compare-byte.empty { color: #2a2a2a; background: #0d0d0d; }
+  .compare-grid { display: flex; overflow-x: auto; }
+  .diff-stats {
+    padding: 6px 10px;
+    border-bottom: 1px solid #222;
+    background: #111;
+    font-size: 0.72em;
+    font-family: "SF Mono", Menlo, monospace;
+    display: flex;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .diff-stats .ds-same { color: #888; }
+  .diff-stats .ds-sub { color: #fde047; }
+  .diff-stats .ds-del { color: #fca5a5; }
+  .diff-stats .ds-ins { color: #86efac; }
+  .hall-list {
+    max-height: 280px;
+    overflow-y: auto;
+    font-size: 0.72em;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .hall-row {
+    display: flex;
+    gap: 6px;
+    padding: 3px 4px;
+    border-bottom: 1px solid #222;
+    align-items: center;
+  }
+  .hall-row .meta { color: var(--dim); }
+  .hall-actions { margin-left: auto; display: flex; gap: 2px; }
+  .hall-actions button {
+    padding: 2px 5px;
+    font-size: 0.85em;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .lineage-row.compared {
+    background: rgba(34, 197, 94, 0.15);
+    border-left: 2px solid var(--accent);
+    padding-left: 2px;
+  }
+  .inspect-info {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.72em;
+    color: #ccc;
+    line-height: 1.5;
+  }
+  .inspect-info .k { color: var(--dim); }
+  .inspect-info .v { color: #fff; }
+  #inspect-genome {
+    width: 100%;
+    height: 140px;
+    background: #0a0a0a;
+    color: #ddd;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 6px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 0.68em;
+    margin-top: 6px;
+    resize: vertical;
+    line-height: 1.4;
+  }
+  .legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 8px;
+    font-size: 0.7em;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #bbb;
+  }
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex: 0 0 auto;
+  }
+  footer {
+    margin-top: 20px;
+    font-size: 0.72em;
+    color: #555;
+    text-align: center;
+    line-height: 1.5;
+  }
+  footer a { color: #777; text-decoration: none; }
+  .help {
+    font-size: 0.72em;
+    color: #999;
+    line-height: 1.45;
+  }
+  .help p { margin: 4px 0; }
+  details summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.78em;
+    margin-bottom: 6px;
+  }
+  @media (max-width: 1280px) {
+    .row-top { grid-template-columns: 280px auto; }
+    .col-creatures { grid-column: 1 / -1; }
+  }
+  @media (max-width: 900px) {
+    .row-top { grid-template-columns: 1fr; }
+    .col-controls, .col-creatures { grid-column: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gene Soup
+    <select id="lang-switch" style="margin-left:12px;font-size:0.45em;vertical-align:middle;background:#1a1a1a;color:#ddd;border:1px solid #333;padding:2px 4px;border-radius:3px;">
+      <option value="ja">日本語</option>
+      <option value="en">English</option>
+    </select>
+  </h1>
+  <div class="subtitle" data-i18n="header.subtitle">Tierra風 人工生命シミュレーター — 機械語で書かれた自己複製プログラムを進化させる</div>
+  <div class="stats">
+    <span><span data-i18n="stats.cycle">サイクル</span> <b id="stat-cycle">0</b></span>
+    <span><span data-i18n="stats.gen">世代</span> <b id="stat-gen">0</b></span>
+    <span><span data-i18n="stats.pop">個体数</span> <b id="stat-pop">0</b></span>
+    <span><span data-i18n="stats.births">累計誕生</span> <b id="stat-births">0</b></span>
+    <span><span data-i18n="stats.deaths">累計死亡</span> <b id="stat-deaths">0</b></span>
+    <span><span data-i18n="stats.mut">突然変異</span> <b id="stat-mut">0</b></span>
+    <span><span data-i18n="stats.mem">メモリ使用</span> <b id="stat-mem">0%</b></span>
+    <span style="color:#22c55e;"><span data-i18n="stats.self">自立</span> <b id="stat-self">0</b></span>
+    <span style="color:#ec4899;"><span data-i18n="stats.parasite">寄生</span> <b id="stat-parasite">0</b></span>
+    <span style="color:#6b7280;"><span data-i18n="stats.degen">縮退</span> <b id="stat-degen">0</b></span>
+    <span id="stat-stagnation-wrap" style="color:#fbbf24;display:none;"><span data-i18n="stats.stagnation">停滞</span> <b id="stat-stagnation">0</b> / <span id="stat-stag-kills">0</span><span data-i18n="stats.stag_kills">淘汰</span> <span id="stat-stag-resets">0</span><span data-i18n="stats.stag_resets">注入</span></span>
+  </div>
+</header>
+
+<main>
+  <div class="row-top">
+    <div class="col-controls">
+      <div class="panel">
+        <h3 data-i18n="panel.control">制御</h3>
+        <div class="button-row">
+          <button id="btn-play" class="primary" data-i18n="btn.pause">⏸ 一時停止</button>
+          <button id="btn-step" data-i18n="btn.step">⏭ 1ステップ</button>
+        </div>
+        <div class="button-row" style="margin-top: 6px;">
+          <button id="btn-reset" data-i18n="btn.reset">🔄 再起動</button>
+          <button id="btn-clear" class="danger" data-i18n="btn.clear">🗑 全リセット</button>
+        </div>
+        <div class="control-row" style="margin-top:10px;">
+          <label data-i18n="label.speed">速度</label>
+          <input id="ctrl-speed" type="range" min="1" max="200" value="20" step="1">
+          <span class="val" id="val-speed">20 tick/f</span>
+        </div>
+        <div class="control-row">
+          <label data-i18n="label.copy_rate">コピー誤り率</label>
+          <input id="ctrl-copy" type="range" min="0" max="200" value="20" step="1">
+          <span class="val" id="val-copy">2.0e-4</span>
+        </div>
+        <div class="control-row">
+          <label data-i18n="label.cosmic_rate">放射線率</label>
+          <input id="ctrl-cosmic" type="range" min="0" max="200" value="10" step="1">
+          <span class="val" id="val-cosmic">1.0e-5</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3><span data-i18n="panel.hall">殿堂入り</span> (<span id="hall-count">0</span>)</h3>
+        <div class="hall-list" id="hall-list"></div>
+        <div class="button-row" style="margin-top:6px;">
+          <button id="btn-hall-export" data-i18n="btn.hall_export" data-i18n-attr="title:tooltip.hall_export" title="JSON でエクスポート">📤 出力</button>
+          <button id="btn-hall-import" data-i18n="btn.hall_import" data-i18n-attr="title:tooltip.hall_import" title="JSON をインポート">📥 入力</button>
+          <button id="btn-hall-clear" class="danger" data-i18n="btn.hall_clear" data-i18n-attr="title:tooltip.hall_clear" title="全削除">🗑 全消去</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 data-i18n="panel.inject">カスタムゲノム注入</h3>
+        <textarea id="custom-genome" spellcheck="false" data-i18n-attr="placeholder:inject.placeholder" placeholder="例: [1,26,0,13,25,0,1,...] か NOP1,ADR_B,NOP0,..."></textarea>
+        <div class="button-row" style="margin-top:6px;">
+          <button id="btn-inject" class="primary" data-i18n="btn.inject">▶ 注入</button>
+          <button id="btn-inject-fresh" class="danger" data-i18n="btn.inject_fresh">🗑 クリア&単独投入</button>
+        </div>
+        <div class="button-row" style="margin-top:4px;">
+          <button id="btn-sample-ancestor" data-i18n="btn.sample_ancestor">祖先(61)</button>
+          <button id="btn-sample-shrunk" data-i18n="btn.sample_shrunk">31バイト</button>
+        </div>
+        <div class="button-row" style="margin-top:4px;">
+          <button id="btn-sample-24" data-i18n="btn.sample_24">24バイト</button>
+          <button id="btn-sample-parasite14" data-i18n="btn.sample_parasite14">寄生(14)</button>
+        </div>
+        <div id="inject-status"></div>
+      </div>
+
+      <div class="panel">
+        <h3 data-i18n="panel.legend">命令カラー</h3>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="panel">
+        <details>
+          <summary data-i18n="panel.about">このシミュレーションについて</summary>
+          <div class="help">
+            <p data-i18n-html="help.intro">Thomas Rayが1990年代に作った<b>Tierra</b>を簡略化したものです。</p>
+            <p data-i18n-html="help.cpu">32種の命令(機械語)からなる仮想CPUがあり、メモリ上の自己複製プログラムが時分割実行されます。</p>
+            <p data-i18n-html="help.ancestor"><b>初代の祖先</b>は61バイトで、自分のコードを探し、メモリを確保し、コピーして分裂します。</p>
+            <p data-i18n-html="help.mutation">コピー時のビット反転と放射線(ランダム位置のビット反転)で遺伝子が変化し、自然選択(メモリが満杯になると死神 Reaper が古い・エラー多発個体を殺す)で進化します。</p>
+            <p data-i18n-html="help.slicer"><b>Slicer</b>: 各個体の1ティック実行サイクル数はゲノム長に比例配分されます (Ray のオリジナル準拠)。短い個体ほど実行が遅くなり、コードあたりの効率が公平化されます。これにより縮退寄生体 (1〜5バイト) が一方的に勝つことがなくなり、Ray の論文と同じく ~40〜80バイトの<b>寄生体 (parasite)</b>が観察できます。寄生体は自前のコピーループを欠き、テンプレート検索で他個体のコピー機構を借用して増えます。</p>
+            <p data-i18n="help.click">個体一覧やメモリ上の点をクリックするとゲノムの中身をテキストで確認できます。系統行をクリックで比較対象に追加/解除。</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="col-soup">
+      <canvas id="soup" width="720" height="640"></canvas>
+
+      <div id="comparison-panel" class="panel comparison-panel" style="display:none;">
+        <div class="comparison-header">
+          <h3 style="margin:0;" data-i18n="panel.compare">ゲノム比較 (差分は赤強調)</h3>
+          <div>
+            <button id="btn-compare-export" style="flex:0 0 auto;" data-i18n="btn.compare_export">📋 比較をコピー</button>
+            <button id="btn-clear-compare" style="flex:0 0 auto;" data-i18n="btn.compare_clear">クリア</button>
+          </div>
+        </div>
+        <div id="comparison-content"></div>
+        <div class="help" style="margin-top:6px;" data-i18n="help.compare_hint">系統リストの行をクリックして比較対象に追加/解除。列ヘッダをクリックで該当 genome を textarea に展開。</div>
+      </div>
+    </div>
+
+    <div class="col-creatures">
+      <div class="panel">
+        <h3 data-i18n="panel.creatures">個体一覧 (genome別 / クリックで検査)</h3>
+        <div class="creature-list" id="creature-list"></div>
+      </div>
+
+      <div class="panel" id="inspect-panel" style="display:none;">
+        <h3 data-i18n="panel.inspect">選択中の個体</h3>
+        <div id="inspect-info" class="inspect-info"></div>
+        <div class="button-row" style="margin-top:8px;">
+          <button id="btn-copy-genome" data-i18n="btn.copy_genome">📋 ゲノムをコピー</button>
+          <button id="btn-deselect" data-i18n="btn.deselect">解除</button>
+        </div>
+        <textarea id="inspect-genome" readonly spellcheck="false"></textarea>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span data-i18n="footer.text">Gene Soup · Tierra (Thomas Ray, 1991) にインスパイア · クリックで個体検査</span>
+</footer>
+
+<script>
+(() => {
+'use strict';
+
+// ============================================================
+// i18n (ja / en)
+// ============================================================
+const I18N = {
+  ja: {
+    'title': 'Gene Soup — Tierra風人工生命シミュレーター',
+    'header.subtitle': 'Tierra風 人工生命シミュレーター — 機械語で書かれた自己複製プログラムを進化させる',
+    'stats.cycle': 'サイクル',
+    'stats.gen': '世代',
+    'stats.pop': '個体数',
+    'stats.births': '累計誕生',
+    'stats.deaths': '累計死亡',
+    'stats.mut': '突然変異',
+    'stats.mem': 'メモリ使用',
+    'stats.self': '自立',
+    'stats.parasite': '寄生',
+    'stats.degen': '縮退',
+    'stats.stagnation': '停滞',
+    'stats.stag_kills': '淘汰',
+    'stats.stag_resets': '注入',
+    'panel.control': '制御',
+    'panel.hall': '殿堂入り',
+    'panel.inject': 'カスタムゲノム注入',
+    'panel.legend': '命令カラー',
+    'panel.about': 'このシミュレーションについて',
+    'panel.creatures': '個体一覧 (genome別 / クリックで検査)',
+    'panel.inspect': '選択中の個体',
+    'panel.compare': 'ゲノム比較 (差分は赤強調)',
+    'btn.pause': '⏸ 一時停止',
+    'btn.play': '▶ 再生',
+    'btn.step': '⏭ 1ステップ',
+    'btn.reset': '🔄 再起動',
+    'btn.clear': '🗑 全リセット',
+    'btn.inject': '▶ 注入',
+    'btn.inject_fresh': '🗑 クリア&単独投入',
+    'btn.sample_ancestor': '祖先(61)',
+    'btn.sample_shrunk': '31バイト',
+    'btn.sample_24': '24バイト',
+    'btn.sample_parasite14': '寄生(14)',
+    'btn.copy_genome': '📋 ゲノムをコピー',
+    'btn.deselect': '解除',
+    'btn.compare_export': '📋 比較をコピー',
+    'btn.compare_clear': 'クリア',
+    'btn.hall_export': '📤 出力',
+    'btn.hall_import': '📥 入力',
+    'btn.hall_clear': '🗑 全消去',
+    'btn.copied': '✓ コピー済み',
+    'tooltip.hall_export': 'JSON でエクスポート',
+    'tooltip.hall_import': 'JSON をインポート',
+    'tooltip.hall_clear': '全削除',
+    'tooltip.lineage_row': 'クリックで比較対象に追加/解除 · Shift+クリックで textarea に展開',
+    'tooltip.compare_col': 'クリックで textarea に展開',
+    'tooltip.hall_inject': '現在のシミュレーションに注入',
+    'tooltip.hall_show': 'textarea に展開',
+    'tooltip.hall_del': '削除',
+    'label.speed': '速度',
+    'label.copy_rate': 'コピー誤り率',
+    'label.cosmic_rate': '放射線率',
+    'label.lang': '言語',
+    'unit.tick_per_frame': 'tick/f',
+    'inject.placeholder': '例: [1,26,0,13,25,0,1,...] か NOP1,ADR_B,NOP0,...',
+    'help.intro': 'Thomas Rayが1990年代に作った<b>Tierra</b>を簡略化したものです。',
+    'help.cpu': '32種の命令(機械語)からなる仮想CPUがあり、メモリ上の自己複製プログラムが時分割実行されます。',
+    'help.ancestor': '<b>初代の祖先</b>は61バイトで、自分のコードを探し、メモリを確保し、コピーして分裂します。',
+    'help.mutation': 'コピー時のビット反転と放射線(ランダム位置のビット反転)で遺伝子が変化し、自然選択(メモリが満杯になると死神 Reaper が古い・エラー多発個体を殺す)で進化します。',
+    'help.slicer': '<b>Slicer</b>: 各個体の1ティック実行サイクル数はゲノム長に比例配分されます (Ray のオリジナル準拠)。短い個体ほど実行が遅くなり、コードあたりの効率が公平化されます。これにより縮退寄生体 (1〜5バイト) が一方的に勝つことがなくなり、Ray の論文と同じく ~40〜80バイトの<b>寄生体 (parasite)</b>が観察できます。寄生体は自前のコピーループを欠き、テンプレート検索で他個体のコピー機構を借用して増えます。',
+    'help.click': '個体一覧やメモリ上の点をクリックするとゲノムの中身をテキストで確認できます。系統行をクリックで比較対象に追加/解除。',
+    'help.compare_hint': '系統リストの行をクリックして比較対象に追加/解除。列ヘッダをクリックで該当 genome を textarea に展開。',
+    'footer.text': 'Gene Soup · Tierra (Thomas Ray, 1991) にインスパイア · クリックで個体検査',
+    'hall.empty': 'まだ記録なし。<br>条件: lifespan ≥ 300 tick / 繁殖 ≥ 5 / len ≤ 55<br>(壁時計ベースでコード長に依存しない指標)',
+    'lab.self': '自立',
+    'lab.parasite': '寄生',
+    'lab.degenerate': '縮退',
+    'lab.unknown': '?',
+    'diff.same': '同',
+    'diff.sub': '置',
+    'diff.del': '削',
+    'diff.ins': '挿',
+    'inspect.label': '分類',
+    'inspect.parasite_ratio': '寄生率',
+    'inspect.outside_total': '(領域外 {out} / 全 {tot})',
+    'inspect.lineage_title': '系統 ({n}世代 - 子→親 / クリックで比較に追加)',
+    'inspect.ancestor_tag': '← 祖先',
+    'inspect.self_tag': '← この個体',
+    'genome.header_view': '# === genome 単位の表示 (実個体ではなく系統の祖) ===',
+    'genome.firstseen': '# 初出 cycle={fs}  累積出現={ts}  ピーク数={peak}  現在数={cur}',
+    'genome.parent_some': '# 親 genome: {info}',
+    'genome.parent_deleted': '(削除済み)',
+    'genome.parent_none': '# 親 genome: なし (系統の祖)',
+    'inject.parse_fail': '解析失敗: 数字列 (0〜31) か OP 名で書いてください',
+    'inject.too_short': 'ゲノム長が短すぎ ({len} < {min})',
+    'inject.too_long': 'ゲノム長が長すぎ ({len} > {max})',
+    'inject.no_space': '空き領域が見つかりません(メモリ満杯)',
+    'inject.success': '注入成功: id={id} len={len} label={label} @{start}',
+    'inject.fresh_done': 'クリアして投入: id={id} len={len} label={label} @{start}',
+    'inject.out_of_range': 'ゲノム長が範囲外 ({min}..{max})',
+    'compare.header': '# ゲノム比較',
+    'hall.import_ok': 'インポート完了: {n} 件',
+    'hall.not_array': 'JSON が配列ではありません',
+    'hall.parse_fail': 'JSON 解析失敗: {msg}',
+    'hall.confirm_clear': '殿堂入りを全削除しますか?',
+    'hall.prompt_import': '殿堂入り JSON を貼り付け:',
+  },
+  en: {
+    'title': 'Gene Soup — Tierra-style Artificial Life Simulator',
+    'header.subtitle': 'Tierra-style artificial life simulator — evolve self-replicating programs written in machine code',
+    'stats.cycle': 'cycle',
+    'stats.gen': 'gen',
+    'stats.pop': 'pop',
+    'stats.births': 'births',
+    'stats.deaths': 'deaths',
+    'stats.mut': 'mutations',
+    'stats.mem': 'mem',
+    'stats.self': 'self',
+    'stats.parasite': 'parasite',
+    'stats.degen': 'degen',
+    'stats.stagnation': 'stagnation',
+    'stats.stag_kills': 'culled',
+    'stats.stag_resets': 'injected',
+    'panel.control': 'Controls',
+    'panel.hall': 'Hall of Fame',
+    'panel.inject': 'Inject Custom Genome',
+    'panel.legend': 'Instruction Colors',
+    'panel.about': 'About this simulation',
+    'panel.creatures': 'Creatures (by genome / click to inspect)',
+    'panel.inspect': 'Selected creature',
+    'panel.compare': 'Genome comparison (diffs highlighted in red)',
+    'btn.pause': '⏸ Pause',
+    'btn.play': '▶ Play',
+    'btn.step': '⏭ Step',
+    'btn.reset': '🔄 Restart',
+    'btn.clear': '🗑 Full reset',
+    'btn.inject': '▶ Inject',
+    'btn.inject_fresh': '🗑 Clear & inject solo',
+    'btn.sample_ancestor': 'Ancestor (61)',
+    'btn.sample_shrunk': '31 bytes',
+    'btn.sample_24': '24 bytes',
+    'btn.sample_parasite14': 'Parasite (14)',
+    'btn.copy_genome': '📋 Copy genome',
+    'btn.deselect': 'Deselect',
+    'btn.compare_export': '📋 Copy comparison',
+    'btn.compare_clear': 'Clear',
+    'btn.hall_export': '📤 Export',
+    'btn.hall_import': '📥 Import',
+    'btn.hall_clear': '🗑 Clear all',
+    'btn.copied': '✓ Copied',
+    'tooltip.hall_export': 'Export as JSON',
+    'tooltip.hall_import': 'Import from JSON',
+    'tooltip.hall_clear': 'Delete all',
+    'tooltip.lineage_row': 'Click to toggle in comparison · Shift-click to load into textarea',
+    'tooltip.compare_col': 'Click to load into textarea',
+    'tooltip.hall_inject': 'Inject into current simulation',
+    'tooltip.hall_show': 'Load into textarea',
+    'tooltip.hall_del': 'Delete',
+    'label.speed': 'Speed',
+    'label.copy_rate': 'Copy error rate',
+    'label.cosmic_rate': 'Cosmic ray rate',
+    'label.lang': 'Lang',
+    'unit.tick_per_frame': 'tick/f',
+    'inject.placeholder': 'e.g. [1,26,0,13,25,0,1,...] or NOP1,ADR_B,NOP0,...',
+    'help.intro': 'A simplified version of <b>Tierra</b>, created by Thomas Ray in the early 1990s.',
+    'help.cpu': 'A virtual CPU with 32 machine-code instructions runs self-replicating programs in shared memory using time-slicing.',
+    'help.ancestor': 'The <b>original ancestor</b> is 61 bytes long: it finds its own code, allocates memory, copies itself, and divides.',
+    'help.mutation': 'Bit flips during copying and cosmic rays (random bit flips in memory) drive genetic change; natural selection (the Reaper kills old and error-prone creatures when memory fills up) drives evolution.',
+    'help.slicer': '<b>Slicer</b>: each creature\'s cycle budget per tick is proportional to its genome length (faithful to Ray\'s original). Shorter creatures execute proportionally slower, equalizing efficiency per byte. This prevents tiny degenerate parasites (1–5 bytes) from dominating, and lets ~40–80 byte <b>parasites</b> emerge — they lack their own copy loop and steal the host\'s copy machinery via template matching.',
+    'help.click': 'Click a creature in the list or a point on the memory canvas to view the genome as text. Click a lineage row to add/remove it from the comparison.',
+    'help.compare_hint': 'Click a row in the lineage list to add/remove it from comparison. Click a column header to load that genome into the textarea.',
+    'footer.text': 'Gene Soup · Inspired by Tierra (Thomas Ray, 1991) · Click creatures to inspect',
+    'hall.empty': 'No entries yet.<br>Criteria: lifespan ≥ 300 ticks / reproductions ≥ 5 / len ≤ 55<br>(wall-clock based, code-length independent)',
+    'lab.self': 'self',
+    'lab.parasite': 'parasite',
+    'lab.degenerate': 'degen',
+    'lab.unknown': '?',
+    'diff.same': '=',
+    'diff.sub': '~',
+    'diff.del': '-',
+    'diff.ins': '+',
+    'inspect.label': 'class',
+    'inspect.parasite_ratio': 'parasitism',
+    'inspect.outside_total': '(outside {out} / total {tot})',
+    'inspect.lineage_title': 'Lineage ({n} gens - child→parent / click to add to comparison)',
+    'inspect.ancestor_tag': '← ancestor',
+    'inspect.self_tag': '← this one',
+    'genome.header_view': '# === genome view (ancestral form, not a live creature) ===',
+    'genome.firstseen': '# first_seen cycle={fs}  total_seen={ts}  peak={peak}  current={cur}',
+    'genome.parent_some': '# parent genome: {info}',
+    'genome.parent_deleted': '(deleted)',
+    'genome.parent_none': '# parent genome: none (lineage root)',
+    'inject.parse_fail': 'parse failed: write digits (0–31) or OP names',
+    'inject.too_short': 'genome too short ({len} < {min})',
+    'inject.too_long': 'genome too long ({len} > {max})',
+    'inject.no_space': 'no free region (memory full)',
+    'inject.success': 'inject ok: id={id} len={len} label={label} @{start}',
+    'inject.fresh_done': 'cleared and injected: id={id} len={len} label={label} @{start}',
+    'inject.out_of_range': 'genome length out of range ({min}..{max})',
+    'compare.header': '# genome comparison',
+    'hall.import_ok': 'imported: {n} entries',
+    'hall.not_array': 'JSON is not an array',
+    'hall.parse_fail': 'JSON parse failed: {msg}',
+    'hall.confirm_clear': 'Delete all Hall of Fame entries?',
+    'hall.prompt_import': 'Paste Hall of Fame JSON:',
+  },
+};
+
+let lang = (() => {
+  try {
+    const saved = localStorage.getItem('gene-soup-lang');
+    if (saved === 'ja' || saved === 'en') return saved;
+  } catch (e) {}
+  return 'en';
+})();
+
+function t(key, params) {
+  let s = (I18N[lang] && I18N[lang][key]) || I18N.ja[key] || key;
+  if (params) {
+    for (const k of Object.keys(params)) {
+      s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
+    }
+  }
+  return s;
+}
+
+function labelName(lab) {
+  const key = 'lab.' + lab;
+  const v = (I18N[lang] && I18N[lang][key]) || I18N.ja[key];
+  return v || '?';
+}
+
+function applyStaticI18n() {
+  document.documentElement.lang = lang;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  document.querySelectorAll('[data-i18n-attr]').forEach(el => {
+    const pairs = el.dataset.i18nAttr.split(',');
+    for (const p of pairs) {
+      const [attr, key] = p.split(':').map(x => x.trim());
+      if (attr && key) el.setAttribute(attr, t(key));
+    }
+  });
+}
+
+function setLang(next) {
+  if (next !== 'ja' && next !== 'en') return;
+  lang = next;
+  try { localStorage.setItem('gene-soup-lang', lang); } catch (e) {}
+  applyStaticI18n();
+  // 動的に生成されている UI を再描画
+  if (typeof buildLegend === 'function') buildLegend();
+  if (typeof updateUI === 'function') updateUI();
+  if (typeof updateInspector === 'function') updateInspector();
+  if (typeof renderHall === 'function') renderHall();
+  if (typeof renderComparison === 'function') renderComparison();
+  // 再生/一時停止ボタンの動的ラベル
+  const btnPlay = document.getElementById('btn-play');
+  if (btnPlay) btnPlay.textContent = t(running ? 'btn.pause' : 'btn.play');
+  // 速度表示の単位
+  const speedVal = document.getElementById('val-speed');
+  const speedSlider = document.getElementById('ctrl-speed');
+  if (speedVal && speedSlider) speedVal.textContent = speedSlider.value + ' ' + t('unit.tick_per_frame');
+}
+
+// ============================================================
+// VM 命令セット (32命令)
+// ============================================================
+const OP = {
+  NOP0:     0,  // テンプレート用
+  NOP1:     1,  // テンプレート用
+  ZERO:     2,  // cx = 0
+  OR1:      3,  // cx |= 1
+  SHL:      4,  // cx <<= 1
+  INC_A:    5,  // ax++
+  INC_B:    6,  // bx++
+  INC_C:    7,  // cx++
+  DEC_C:    8,  // cx--
+  IFZ:      9,  // if (cx == 0) execute next else skip
+  IFNZ:    10,  // if (cx != 0) execute next else skip
+  SUB_BA:  11,  // cx = bx - ax
+  MOV_AB:  12,  // mem[bx] = mem[ax]
+  PUSH_A:  13,
+  PUSH_B:  14,
+  PUSH_C:  15,
+  PUSH_D:  16,
+  POP_A:   17,
+  POP_B:   18,
+  POP_C:   19,
+  POP_D:   20,
+  JMP_F:   21,  // テンプレートを前方検索してジャンプ
+  JMP_B:   22,  // 後方検索
+  CALL:    23,  // push ip, jmp
+  RET:     24,
+  ADR_F:   25,  // ax = テンプレート位置(前方)
+  ADR_B:   26,  // ax = テンプレート位置(後方)
+  MAL:     27,  // cx バイトを確保, dx = 開始位置
+  DIVIDE:  28,  // 確保領域を新個体として分離
+  NOP_X1:  29,  // 予備 NOP
+  NOP_X2:  30,
+  NOP_X3:  31,
+};
+const NUM_OPS = 32;
+const OP_NAMES = Object.fromEntries(Object.entries(OP).map(([k,v]) => [v, k]));
+
+// ============================================================
+// 設定
+// ============================================================
+const COLS = 144;                        // 24の倍数
+const ROWS = 128;                        // 64 → 128 (プール倍化)
+const MEM_SIZE = COLS * ROWS;          // 18432バイト
+const CELL = 5;                          // 描画セルサイズ (canvas を画面に収めるため少し縮小)
+const MAX_STACK = 10;
+const MAX_TEMPLATE = 10;
+const MAX_SEARCH = 600;                  // テンプレート検索距離
+// CPU時間配分 (Slicer): 各個体の1ティック実行サイクル数 = ゲノム長 × SLICE_PER_BYTE
+// Ray のオリジナル Tierra と同じ。短い個体ほど実行が遅くなり、
+// 「自前のコピーループを持たない縮退寄生体」が一方的に得をすることを防ぐ。
+const SLICE_PER_BYTE = 1;
+const SLICE_MIN = 1;
+const REAPER_THRESHOLD = 0.65;           // メモリ使用率がこれを超えたら死神発動(早めに動かして勾配的選択)
+const MIN_DAUGHTER = 12;                 // MAL の最小確保サイズ (Ray のオリジナルに準拠)
+const MAX_DAUGHTER = 800;                // MAL の最大確保サイズ
+const MAX_CREATURES = 400;
+// 機能不全死: 極端なゾンビだけ即死させる (寄生体や移行期個体は守る)
+const ERROR_DEATH_THRESHOLD = 10000;     // errors がこれを超えると即死(ゾンビ防止)
+const ERROR_DEATH_RATIO = 0.9;           // errors / age がこれを超えても即死 (= 9割が失敗 = 完全に壊れた個体)
+const ERROR_DEATH_MIN_AGE = 500;          // この age に達するまでは強制死しない (変異中の若い個体を守る)
+
+// ============================================================
+// 状態
+// ============================================================
+const mem = new Uint8Array(MEM_SIZE);    // メモリ(命令格納)
+const owner = new Int32Array(MEM_SIZE);  // 各バイトの所有者ID (-1: 空き, 0以上: creature ID)
+let creatures = [];                       // 生きてる個体
+let nextId = 1;
+let cycle = 0;
+let totalBirths = 0;
+let totalDeaths = 0;
+let mutations = 0;
+let generationMax = 0;
+let running = true;
+let copyErrorRate = 2e-4;
+let cosmicRate = 1e-5;
+let cyclesPerFrame = 20;
+let selectedCreature = null;
+const genomes = new Map();               // genomeハッシュ → {hash, length, count, firstSeen, color}
+// 停滞検出 (stagnation): 出産がしばらく無いと飢餓死&祖先注入
+let stagnationCounter = 0;
+let lastTotalBirths = 0;
+let stagnationKills = 0;
+let stagnationResets = 0;
+const STAGNATION_STARVE = 3000;          // 出産無し N cycle で飢餓淘汰開始
+const STAGNATION_STARVE_INTERVAL = 400;  // 飢餓淘汰の間隔
+const STAGNATION_RESET = 10000;          // 完全停滞: 祖先注入
+
+// 殿堂入り (Hall of Fame): age が一定以上 & 繁殖実績ありの優秀な genome を localStorage に保存
+const HALL_KEY = 'gene-soup-hall-of-fame-v1';
+const HALL_LIFESPAN_THRESHOLD = 300;     // 壁時計 tick がこれ以上 (age とちがってコード長に依存しない)
+const HALL_REPRO_THRESHOLD = 5;          // 繁殖がこれ以上で「実績あり」
+const HALL_MAX_LEN = 55;                 // 長さがこれ以下 (祖先 ≈61 に近い個体は退屈なので除外)
+const HALL_MAX_ENTRIES = 50;             // 上限
+let hallOfFame = [];                      // [{ hashHex, length, label, gen, age, reproductions, bytes, savedAt }]
+
+// ============================================================
+// 祖先 (Ancestor) - 59バイトの自己複製プログラム
+// ============================================================
+const ANCESTOR = [
+  // 0-3: 開始テンプレート 1110
+  OP.NOP1, OP.NOP1, OP.NOP1, OP.NOP0,
+  // 4-8: ADR_B 0001 → ax = 自分の開始位置
+  OP.ADR_B, OP.NOP0, OP.NOP0, OP.NOP0, OP.NOP1,
+  // 9: 保存
+  OP.PUSH_A,
+  // 10-14: ADR_F 0010 → ax = 終了テンプレートの位置
+  OP.ADR_F, OP.NOP0, OP.NOP0, OP.NOP1, OP.NOP0,
+  // 15-17: スタック整理 bx = end, ax = start
+  OP.PUSH_A, OP.POP_B, OP.POP_A,
+  // 18: cx = bx - ax
+  OP.SUB_BA,
+  // 19-22: cx += 4 (終了テンプレートの分の長さ加算)
+  OP.INC_C, OP.INC_C, OP.INC_C, OP.INC_C,
+  // 23: MAL → dx = 確保した娘領域の開始
+  OP.MAL,
+  // 24-25: bx = dx
+  OP.PUSH_D, OP.POP_B,
+  // 26-29: ループ先頭テンプレート 0101
+  OP.NOP0, OP.NOP1, OP.NOP0, OP.NOP1,
+  // 30-33: コピー本体 mem[bx]=mem[ax]; ax++; bx++; cx--
+  OP.MOV_AB, OP.INC_A, OP.INC_B, OP.DEC_C,
+  // 34: cx==0なら次を実行(脱出)
+  OP.IFZ,
+  // 35-39: JMP_F 0100 → 脱出マーカー(補数 1011)へ
+  OP.JMP_F, OP.NOP0, OP.NOP1, OP.NOP0, OP.NOP0,
+  // 40-44: JMP_B 1010 → ループ先頭(補数 0101)へ
+  OP.JMP_B, OP.NOP1, OP.NOP0, OP.NOP1, OP.NOP0,
+  // 45: 区切り(非NOP) — テンプレートと次マーカーを分離するため必要
+  OP.ZERO,
+  // 46-49: ループ脱出マーカー 1011
+  OP.NOP1, OP.NOP0, OP.NOP1, OP.NOP1,
+  // 50: 分裂
+  OP.DIVIDE,
+  // 51-55: JMP_B 0001 → 自分の開始へ戻り再生産
+  OP.JMP_B, OP.NOP0, OP.NOP0, OP.NOP0, OP.NOP1,
+  // 56: 区切り(非NOP)
+  OP.ZERO,
+  // 57-60: 終了テンプレート 1101
+  OP.NOP1, OP.NOP1, OP.NOP0, OP.NOP1,
+];
+
+// ============================================================
+// 色定義 (命令ごと)
+// ============================================================
+const OP_COLORS = new Array(NUM_OPS);
+const colorMap = {
+  [OP.NOP0]:    '#2a2a2a',
+  [OP.NOP1]:    '#555',
+  [OP.ZERO]:    '#3b82f6',
+  [OP.OR1]:     '#60a5fa',
+  [OP.SHL]:     '#93c5fd',
+  [OP.INC_A]:   '#10b981',
+  [OP.INC_B]:   '#34d399',
+  [OP.INC_C]:   '#6ee7b7',
+  [OP.DEC_C]:   '#f97316',
+  [OP.IFZ]:     '#ef4444',
+  [OP.IFNZ]:    '#dc2626',
+  [OP.SUB_BA]:  '#a855f7',
+  [OP.MOV_AB]:  '#eab308',
+  [OP.PUSH_A]:  '#7c3aed',
+  [OP.PUSH_B]:  '#8b5cf6',
+  [OP.PUSH_C]:  '#a78bfa',
+  [OP.PUSH_D]:  '#c4b5fd',
+  [OP.POP_A]:   '#06b6d4',
+  [OP.POP_B]:   '#22d3ee',
+  [OP.POP_C]:   '#67e8f9',
+  [OP.POP_D]:   '#a5f3fc',
+  [OP.JMP_F]:   '#fb923c',
+  [OP.JMP_B]:   '#f97316',
+  [OP.CALL]:    '#d97706',
+  [OP.RET]:     '#b45309',
+  [OP.ADR_F]:   '#14b8a6',
+  [OP.ADR_B]:   '#0d9488',
+  [OP.MAL]:     '#ec4899',
+  [OP.DIVIDE]:  '#22c55e',
+  [OP.NOP_X1]:  '#666',
+  [OP.NOP_X2]:  '#666',
+  [OP.NOP_X3]:  '#666',
+};
+for (let i = 0; i < NUM_OPS; i++) OP_COLORS[i] = colorMap[i] || '#666';
+
+// 描画用に色文字列を r/g/b に分解
+const OP_RGB = OP_COLORS.map(c => {
+  const m = c.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : [128,128,128];
+});
+
+// 命令カラー: ベース値 (不変) と HSL 化キャッシュ。OP_RGB / OP_COLORS は色相シフトで上書きされる
+const OP_RGB_BASE = OP_RGB.map(rgb => rgb.slice());
+const OP_HSL_BASE = OP_RGB_BASE.map(([r,g,b]) => rgbToHsl(r,g,b));
+let hueShift = 0;            // 0..360 deg
+const HUE_SHIFT_PER_SEC = 6; // 1秒あたりの色相回転量(deg)
+let legendSwatches = null;   // buildLegend 後に格納される DOM 参照
+
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+  }
+  return [h, s, l];
+}
+
+function hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360 / 360;
+  if (s === 0) {
+    const v = Math.round(l * 255);
+    return [v, v, v];
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const hue2rgb = (t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+  };
+  return [
+    Math.round(hue2rgb(h + 1/3) * 255),
+    Math.round(hue2rgb(h)       * 255),
+    Math.round(hue2rgb(h - 1/3) * 255),
+  ];
+}
+
+function toHex(r,g,b) {
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function applyHueShift() {
+  for (let i = 0; i < NUM_OPS; i++) {
+    const [h, s, l] = OP_HSL_BASE[i];
+    // 彩度がほぼ無い(灰色系)は回転しても意味がないのでスキップ
+    if (s < 0.05) continue;
+    const [r, g, b] = hslToRgb(h + hueShift, s, l);
+    OP_RGB[i][0] = r;
+    OP_RGB[i][1] = g;
+    OP_RGB[i][2] = b;
+    OP_COLORS[i] = toHex(r, g, b);
+    if (legendSwatches && legendSwatches[i]) {
+      legendSwatches[i].style.background = OP_COLORS[i];
+    }
+  }
+}
+
+// ============================================================
+// 初期化
+// ============================================================
+function init() {
+  mem.fill(0);
+  owner.fill(-1);
+  creatures = [];
+  nextId = 1;
+  cycle = 0;
+  totalBirths = 0;
+  totalDeaths = 0;
+  mutations = 0;
+  generationMax = 0;
+  genomes.clear();
+  selectedCreature = null;
+  stagnationCounter = 0;
+  lastTotalBirths = 0;
+  stagnationKills = 0;
+  stagnationResets = 0;
+
+  // ランダムノイズを薄く撒く
+  for (let i = 0; i < MEM_SIZE; i++) {
+    mem[i] = Math.floor(Math.random() * NUM_OPS);
+  }
+
+  // 祖先を中央に配置
+  const start = Math.floor((MEM_SIZE - ANCESTOR.length) / 2);
+  for (let i = 0; i < ANCESTOR.length; i++) {
+    mem[start + i] = ANCESTOR[i];
+  }
+  const c = newCreature(start, ANCESTOR.length, 0, null);
+  creatures.push(c);
+  totalBirths++;
+}
+
+function newCreature(start, size, gen, parent) {
+  const c = {
+    id: nextId++,
+    ip: start,
+    ax: 0, bx: 0, cx: 0, dx: 0,
+    stack: [],
+    skipNext: false,
+    region: { start, size },
+    daughter: null,         // { start, size } | null
+    age: 0,
+    birthCycle: cycle,         // 壁時計 tick (lifespan = cycle - birthCycle で計算)
+    errors: 0,
+    reproductions: 0,
+    generation: gen,
+    genomeHash: 0,
+    color: hslColor(gen),
+    // 動的計測: ip が領域内/領域外にいた step 数
+    insideCycles: 0,
+    outsideCycles: 0,
+    // 静的分類 (newCreature 時にゲノムから決定)
+    label: 'unknown',
+    // 親個体への参照 (系統樹)
+    parentId: parent ? parent.id : null,
+    parentGenomeKey: parent ? parent.genomeKey : null,
+  };
+  // 所有権を更新
+  for (let i = 0; i < size; i++) {
+    owner[(start + i) % MEM_SIZE] = c.id;
+  }
+  c.genomeHash = hashRegion(start, size);
+  c.label = classifyGenome(start, size);
+  registerGenome(c, parent);
+  if (gen > generationMax) generationMax = gen;
+  return c;
+}
+
+// 静的命令プロファイル分類
+// - self     : MAL + MOV_AB + DIVIDE すべて持つ (祖先タイプ)
+// - parasite : DIVIDE はあるが MAL か MOV_AB が欠落 (借用型)
+// - degenerate : DIVIDE すらない (通常 viability check で除外されるはずだが念のため)
+function classifyGenome(start, size) {
+  let hasMal = false, hasMov = false, hasDivide = false;
+  for (let i = 0; i < size; i++) {
+    const b = mem[(start + i) % MEM_SIZE];
+    if (b === OP.MAL) hasMal = true;
+    else if (b === OP.MOV_AB) hasMov = true;
+    else if (b === OP.DIVIDE) hasDivide = true;
+  }
+  if (!hasDivide) return 'degenerate';
+  if (hasMal && hasMov) return 'self';
+  return 'parasite';
+}
+
+const LABEL_COLORS = {
+  self:       '#22c55e',
+  parasite:   '#ec4899',
+  degenerate: '#6b7280',
+  unknown:    '#999',
+};
+// 互換のため残す (現在は labelName() を使う) — 直接参照箇所も labelName() に置換済み
+const LABEL_NAMES = new Proxy({}, { get: (_, k) => labelName(String(k)) });
+
+function hslColor(gen) {
+  const h = (gen * 47) % 360;
+  return `hsl(${h}, 70%, 60%)`;
+}
+
+function hashRegion(start, size) {
+  // 簡易ハッシュ (FNV-1a)
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < size; i++) {
+    h ^= mem[(start + i) % MEM_SIZE];
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h;
+}
+
+function registerGenome(c, parent) {
+  const key = `${c.genomeHash}:${c.region.size}`;
+  let g = genomes.get(key);
+  if (!g) {
+    // 初出時にバイト列のスナップショットを保存(genome が絶滅しても中身が見られるように)
+    const bytes = new Uint8Array(c.region.size);
+    for (let i = 0; i < c.region.size; i++) {
+      bytes[i] = mem[(c.region.start + i) % MEM_SIZE];
+    }
+    g = {
+      key,
+      hash: c.genomeHash,
+      length: c.region.size,
+      count: 0,
+      firstSeen: cycle,
+      color: c.color,
+      gen: c.generation,
+      label: c.label,
+      parentKey: parent ? parent.genomeKey : null,
+      peakCount: 0,
+      totalSeen: 0,
+      bytes,
+    };
+    genomes.set(key, g);
+  }
+  g.count++;
+  g.totalSeen++;
+  if (g.count > g.peakCount) g.peakCount = g.count;
+  c.genomeKey = key;
+}
+
+function unregisterGenome(c) {
+  const g = genomes.get(c.genomeKey);
+  if (g) {
+    g.count--;
+    // 系統樹の連鎖を保つため、count=0 でも genome 自体は削除しない
+    // (削除すると子孫の親リンクが切れてしまう)
+  }
+}
+
+// genome の系統チェーン (現在 → 親 → 祖父 → ... → 祖先) を返す
+function genomeLineage(key, maxDepth = 30) {
+  const chain = [];
+  const seen = new Set();
+  let k = key;
+  while (k && !seen.has(k) && chain.length < maxDepth) {
+    seen.add(k);
+    const g = genomes.get(k);
+    if (!g) break;
+    chain.push(g);
+    k = g.parentKey;
+  }
+  return chain;
+}
+
+// ============================================================
+// 個体検査ユーティリティ
+// ============================================================
+function inRegion(c, addr) {
+  const a = (addr % MEM_SIZE + MEM_SIZE) % MEM_SIZE;
+  if (isInRange(a, c.region.start, c.region.size)) return true;
+  if (c.daughter && isInRange(a, c.daughter.start, c.daughter.size)) return true;
+  return false;
+}
+function isInRange(addr, start, size) {
+  const end = (start + size) % MEM_SIZE;
+  if (end > start) return addr >= start && addr < end;
+  return addr >= start || addr < end;
+}
+
+// ============================================================
+// テンプレート操作
+// ============================================================
+function readTemplate(start) {
+  const tmpl = [];
+  for (let i = 0; i < MAX_TEMPLATE; i++) {
+    const b = mem[(start + i) % MEM_SIZE];
+    if (b !== OP.NOP0 && b !== OP.NOP1) break;
+    tmpl.push(b);
+  }
+  return tmpl;
+}
+
+// dir = +1 (前方) または -1 (後方)
+// from から探索開始, 補数テンプレートを検索, 一致開始アドレスを返す
+function findComplement(from, dir, tmpl) {
+  if (tmpl.length === 0) return -1;
+  const tlen = tmpl.length;
+  for (let d = 0; d < MAX_SEARCH; d++) {
+    const i = ((from + dir * d) % MEM_SIZE + MEM_SIZE) % MEM_SIZE;
+    let match = true;
+    for (let j = 0; j < tlen; j++) {
+      const b = mem[(i + j) % MEM_SIZE];
+      // 補数: 0 ↔ 1
+      if (b !== (1 - tmpl[j])) { match = false; break; }
+    }
+    if (match) return i;
+  }
+  return -1;
+}
+
+// ============================================================
+// メモリ確保 (空き領域探索)
+// ============================================================
+function findFreeRegion(size) {
+  if (size <= 0 || size > MAX_DAUGHTER) return -1;
+  // ランダムな開始点から線形探索
+  const seed = Math.floor(Math.random() * MEM_SIZE);
+  let run = 0;
+  let runStart = -1;
+  for (let i = 0; i < MEM_SIZE; i++) {
+    const idx = (seed + i) % MEM_SIZE;
+    if (owner[idx] === -1) {
+      if (run === 0) runStart = idx;
+      run++;
+      if (run >= size && (runStart + size) <= MEM_SIZE) {
+        // 線形ブロックを優先 (ラップしない)
+        return runStart;
+      }
+    } else {
+      run = 0;
+      runStart = -1;
+    }
+  }
+  return -1;
+}
+
+function markRegion(start, size, id) {
+  for (let i = 0; i < size; i++) {
+    owner[(start + i) % MEM_SIZE] = id;
+  }
+}
+
+function freeRegion(start, size, id) {
+  for (let i = 0; i < size; i++) {
+    const idx = (start + i) % MEM_SIZE;
+    if (owner[idx] === id) owner[idx] = -1;
+  }
+}
+
+// ============================================================
+// 個体実行
+// ============================================================
+function stackPush(c, v) {
+  if (c.stack.length >= MAX_STACK) c.stack.shift();
+  c.stack.push(v);
+}
+function stackPop(c) {
+  if (c.stack.length === 0) { c.errors++; return 0; }
+  return c.stack.pop();
+}
+
+function step(c) {
+  // 動的計測: ip が自領域内にいるか領域外にいるかを記録
+  if (isInRange(c.ip, c.region.start, c.region.size)) c.insideCycles++;
+  else c.outsideCycles++;
+  if (c.skipNext) {
+    c.skipNext = false;
+    c.ip = (c.ip + 1) % MEM_SIZE;
+    return;
+  }
+  const op = mem[c.ip];
+  let advance = true;
+  switch (op) {
+    case OP.NOP0: case OP.NOP1:
+    case OP.NOP_X1: case OP.NOP_X2: case OP.NOP_X3:
+      break;
+    case OP.ZERO: c.cx = 0; break;
+    case OP.OR1: c.cx = c.cx | 1; break;
+    case OP.SHL: c.cx = (c.cx << 1) & 0xFFFFFF; break;
+    case OP.INC_A: c.ax = (c.ax + 1) % MEM_SIZE; break;
+    case OP.INC_B: c.bx = (c.bx + 1) % MEM_SIZE; break;
+    case OP.INC_C: c.cx = (c.cx + 1) | 0; break;
+    case OP.DEC_C: c.cx = (c.cx - 1) | 0; break;
+    case OP.IFZ: c.skipNext = (c.cx !== 0); break;
+    case OP.IFNZ: c.skipNext = (c.cx === 0); break;
+    case OP.SUB_BA: c.cx = (c.bx - c.ax) | 0; break;
+    case OP.MOV_AB: {
+      const dst = (c.bx % MEM_SIZE + MEM_SIZE) % MEM_SIZE;
+      const src = (c.ax % MEM_SIZE + MEM_SIZE) % MEM_SIZE;
+      if (inRegion(c, dst)) {
+        let v = mem[src];
+        if (Math.random() < copyErrorRate) {
+          v ^= 1 << Math.floor(Math.random() * 5);
+          v = v & 0x1F;
+          mutations++;
+        }
+        mem[dst] = v;
+      } else {
+        c.errors++;
+      }
+      break;
+    }
+    case OP.PUSH_A: stackPush(c, c.ax); break;
+    case OP.PUSH_B: stackPush(c, c.bx); break;
+    case OP.PUSH_C: stackPush(c, c.cx); break;
+    case OP.PUSH_D: stackPush(c, c.dx); break;
+    case OP.POP_A: c.ax = stackPop(c); break;
+    case OP.POP_B: c.bx = stackPop(c); break;
+    case OP.POP_C: c.cx = stackPop(c); break;
+    case OP.POP_D: c.dx = stackPop(c); break;
+    case OP.JMP_F: case OP.JMP_B: {
+      const tmpl = readTemplate((c.ip + 1) % MEM_SIZE);
+      if (tmpl.length === 0) {
+        c.ip = (c.ip + 1) % MEM_SIZE;
+        advance = false;
+        break;
+      }
+      const after = (c.ip + 1 + tmpl.length) % MEM_SIZE;
+      const dir = (op === OP.JMP_F) ? 1 : -1;
+      // 前方検索: テンプレートの直後から / 後方検索: JMP命令の直前から
+      const searchFrom = (dir === 1) ? after : ((c.ip - 1 + MEM_SIZE) % MEM_SIZE);
+      const match = findComplement(searchFrom, dir, tmpl);
+      if (match >= 0) {
+        c.ip = (match + tmpl.length) % MEM_SIZE;
+      } else {
+        c.ip = after;
+        c.errors++;
+      }
+      advance = false;
+      break;
+    }
+    case OP.CALL: {
+      const tmpl = readTemplate((c.ip + 1) % MEM_SIZE);
+      const after = (c.ip + 1 + tmpl.length) % MEM_SIZE;
+      stackPush(c, after);
+      if (tmpl.length === 0) { c.ip = after; advance = false; break; }
+      const match = findComplement(after, 1, tmpl);
+      if (match >= 0) c.ip = (match + tmpl.length) % MEM_SIZE;
+      else { c.ip = after; c.errors++; }
+      advance = false;
+      break;
+    }
+    case OP.RET: {
+      const ret = stackPop(c);
+      c.ip = ((ret | 0) % MEM_SIZE + MEM_SIZE) % MEM_SIZE;
+      advance = false;
+      break;
+    }
+    case OP.ADR_F: case OP.ADR_B: {
+      const tmpl = readTemplate((c.ip + 1) % MEM_SIZE);
+      const after = (c.ip + 1 + tmpl.length) % MEM_SIZE;
+      if (tmpl.length === 0) { c.ip = after; advance = false; break; }
+      const dir = (op === OP.ADR_F) ? 1 : -1;
+      const searchFrom = (dir === 1) ? after : ((c.ip - 1 + MEM_SIZE) % MEM_SIZE);
+      const match = findComplement(searchFrom, dir, tmpl);
+      if (match >= 0) c.ax = match;
+      else c.errors++;
+      c.ip = after;
+      advance = false;
+      break;
+    }
+    case OP.MAL: {
+      const size = c.cx | 0;
+      // 最小・最大サイズ制約 (極端に短い縮退寄生体を防ぐ)
+      if (size < MIN_DAUGHTER || size > MAX_DAUGHTER) { c.errors++; break; }
+      // 以前の確保を解放
+      if (c.daughter) {
+        freeRegion(c.daughter.start, c.daughter.size, c.id);
+        c.daughter = null;
+      }
+      const start = findFreeRegion(size);
+      if (start < 0) { c.errors++; break; }
+      c.daughter = { start, size };
+      c.dx = start;
+      markRegion(start, size, c.id);
+      break;
+    }
+    case OP.DIVIDE: {
+      if (!c.daughter) { c.errors++; break; }
+      const d = c.daughter;
+      c.daughter = null;
+      // 生存能力チェック: 娘のコードに少なくとも 1 個の DIVIDE 命令が必要。
+      // これがないと「自前で繁殖する手段」が無いので、永遠にホストを乗っ取り続ける
+      // 縮退寄生体 (例: 全 NOP1 の個体) が大量発生してしまう。
+      // Tierra でも娘の "viability" は実質的にチェックされていた。
+      let hasDivide = false;
+      for (let i = 0; i < d.size; i++) {
+        if (mem[(d.start + i) % MEM_SIZE] === OP.DIVIDE) { hasDivide = true; break; }
+      }
+      if (!hasDivide) {
+        freeRegion(d.start, d.size, c.id);
+        c.errors++;
+        break;
+      }
+      if (creatures.length < MAX_CREATURES) {
+        const child = newCreature(d.start, d.size, c.generation + 1, c);
+        creatures.push(child);
+        totalBirths++;
+        c.reproductions++;
+      } else {
+        // 個体数上限: 領域を解放
+        freeRegion(d.start, d.size, c.id);
+      }
+      break;
+    }
+    default: c.errors++; break;
+  }
+  if (advance) c.ip = (c.ip + 1) % MEM_SIZE;
+  c.age++;
+}
+
+// ============================================================
+// 死神 (Reaper)
+// ============================================================
+function memoryUsage() {
+  let used = 0;
+  for (let i = 0; i < MEM_SIZE; i++) if (owner[i] !== -1) used++;
+  return used / MEM_SIZE;
+}
+
+function reaperScore(c) {
+  // エラー多発 & 老齢 ほど死にやすい。
+  // Ray のオリジナル: エラー1回で reaper queue を上に押し上げる仕組みに近づける。
+  // 正常な繁殖が続いていれば age - reproductions*200 が負になり減点される。
+  const errPenalty = c.errors * 30;
+  const ageMinusRepro = Math.max(0, c.age - c.reproductions * 250);
+  return errPenalty + ageMinusRepro;
+}
+
+function killCreature(c) {
+  freeRegion(c.region.start, c.region.size, c.id);
+  if (c.daughter) freeRegion(c.daughter.start, c.daughter.size, c.id);
+  unregisterGenome(c);
+  totalDeaths++;
+  if (selectedCreature === c) selectedCreature = null;
+}
+
+function runReaper() {
+  const usage = memoryUsage();
+  if (usage < REAPER_THRESHOLD) return;
+  // メモリ圧迫度に応じて間引き量を増減 (緩やかな選択 → 急激な大粛清の連続を防ぐ)
+  // 65% で 1個体, 80% で 1-2%, 95% で 5%
+  const pressure = (usage - REAPER_THRESHOLD) / (1 - REAPER_THRESHOLD);
+  const cullRatio = Math.max(0.001, Math.min(0.05, pressure * 0.05));
+  const target = Math.max(1, Math.floor(creatures.length * cullRatio));
+  const sorted = [...creatures].sort((a,b) => reaperScore(b) - reaperScore(a));
+  for (let i = 0; i < target && i < sorted.length; i++) {
+    killCreature(sorted[i]);
+  }
+  creatures = creatures.filter(c => !sorted.slice(0, target).includes(c));
+}
+
+// ============================================================
+// 放射線 (cosmic ray)
+// ============================================================
+function cosmicRays() {
+  const expected = MEM_SIZE * cosmicRate;
+  let count = Math.floor(expected) + (Math.random() < (expected - Math.floor(expected)) ? 1 : 0);
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor(Math.random() * MEM_SIZE);
+    mem[idx] = (mem[idx] ^ (1 << Math.floor(Math.random() * 5))) & 0x1F;
+    mutations++;
+  }
+}
+
+// ============================================================
+// メインループ
+// ============================================================
+function tick() {
+  if (creatures.length === 0) {
+    // 全滅したら祖先を再投入
+    const start = findFreeRegion(ANCESTOR.length);
+    if (start >= 0) {
+      for (let i = 0; i < ANCESTOR.length; i++) mem[start+i] = ANCESTOR[i];
+      const c = newCreature(start, ANCESTOR.length, 0, null);
+      creatures.push(c);
+      totalBirths++;
+    }
+    return;
+  }
+  // ランダム順実行 (公平性)
+  const order = creatures.slice();
+  for (let k = order.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [order[k], order[j]] = [order[j], order[k]];
+  }
+  for (const c of order) {
+    // Slicer: 実行サイクル数をゲノム長に比例配分。
+    // これで「短い個体ほど高速」という不公平がなくなる(Ray のオリジナル準拠)。
+    const slice = Math.max(SLICE_MIN, c.region.size * SLICE_PER_BYTE);
+    for (let s = 0; s < slice; s++) {
+      step(c);
+    }
+  }
+  cosmicRays();
+  // 殿堂入りチェック: 各個体の age を確認して条件を満たせば記録
+  // (毎ティック呼ぶが、tryAddToHall 内の閾値チェックで早期 return するので軽い)
+  for (const c of creatures) tryAddToHall(c);
+  // 機能不全死: 極端なゾンビだけ淘汰 (寄生体や移行期の変異個体は守る)
+  const dead = [];
+  for (const c of creatures) {
+    if (c.errors > ERROR_DEATH_THRESHOLD) { dead.push(c); continue; }
+    if (c.age > ERROR_DEATH_MIN_AGE && c.errors > c.age * ERROR_DEATH_RATIO && c.reproductions === 0) {
+      dead.push(c);
+    }
+  }
+  for (const c of dead) killCreature(c);
+  if (dead.length > 0) creatures = creatures.filter(c => !dead.includes(c));
+  runReaper();
+  // 個体数調整 (オーバーフロー防止)
+  if (creatures.length > MAX_CREATURES) {
+    const sorted = [...creatures].sort((a,b) => reaperScore(b) - reaperScore(a));
+    const cull = creatures.length - MAX_CREATURES;
+    for (let i = 0; i < cull; i++) killCreature(sorted[i]);
+    creatures = creatures.filter(c => sorted.slice(0, cull).indexOf(c) < 0);
+  }
+  // 停滞検出: 一定時間出産が無ければ飢餓淘汰 → さらに続けば祖先注入
+  if (totalBirths > lastTotalBirths) {
+    stagnationCounter = 0;
+    lastTotalBirths = totalBirths;
+  } else {
+    stagnationCounter++;
+  }
+  if (stagnationCounter >= STAGNATION_RESET) {
+    // 完全停滞: 祖先を注入
+    const start = findFreeRegion(ANCESTOR.length);
+    if (start >= 0) {
+      for (let i = 0; i < ANCESTOR.length; i++) mem[start + i] = ANCESTOR[i];
+      const c = newCreature(start, ANCESTOR.length, 0, null);
+      creatures.push(c);
+      totalBirths++;
+      stagnationResets++;
+    }
+    stagnationCounter = 0;
+  } else if (stagnationCounter >= STAGNATION_STARVE &&
+             (stagnationCounter - STAGNATION_STARVE) % STAGNATION_STARVE_INTERVAL === 0) {
+    // 飢餓淘汰: 一番繁殖していない最古の個体を1人ずつ間引く
+    if (creatures.length > 1) {
+      let worst = creatures[0];
+      let worstScore = -Infinity;
+      for (const c of creatures) {
+        const s = c.age - c.reproductions * 2000;
+        if (s > worstScore) { worstScore = s; worst = c; }
+      }
+      killCreature(worst);
+      creatures = creatures.filter(c => c !== worst);
+      stagnationKills++;
+    }
+  }
+  cycle++;
+}
+
+// ============================================================
+// 描画
+// ============================================================
+const canvas = document.getElementById('soup');
+const ctx = canvas.getContext('2d');
+canvas.width = COLS * CELL;
+canvas.height = ROWS * CELL;
+canvas.style.maxWidth = (COLS * CELL) + 'px';
+
+const offscreen = document.createElement('canvas');
+offscreen.width = COLS;
+offscreen.height = ROWS;
+const offctx = offscreen.getContext('2d');
+const imgData = offctx.createImageData(COLS, ROWS);
+
+function render() {
+  // メモリ → ピクセル
+  const data = imgData.data;
+  for (let i = 0; i < MEM_SIZE; i++) {
+    const op = mem[i];
+    const own = owner[i];
+    let [r,g,b] = OP_RGB[op];
+    // 所有なしの領域は暗く
+    if (own === -1) {
+      r = Math.floor(r * 0.35);
+      g = Math.floor(g * 0.35);
+      b = Math.floor(b * 0.35);
+    }
+    const o = i * 4;
+    data[o] = r;
+    data[o+1] = g;
+    data[o+2] = b;
+    data[o+3] = 255;
+  }
+  offctx.putImageData(imgData, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(offscreen, 0, 0, canvas.width, canvas.height);
+
+  // 個体のIP位置を強調
+  for (const c of creatures) {
+    const ip = c.ip;
+    const x = (ip % COLS) * CELL;
+    const y = Math.floor(ip / COLS) * CELL;
+    ctx.fillStyle = c === selectedCreature ? '#fff' : 'rgba(255,255,255,0.55)';
+    ctx.fillRect(x, y, CELL, CELL);
+  }
+
+  // 選択個体の領域を縁取り
+  if (selectedCreature && creatures.includes(selectedCreature)) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    drawRegionOutline(selectedCreature.region.start, selectedCreature.region.size);
+    if (selectedCreature.daughter) {
+      ctx.strokeStyle = '#22c55e';
+      drawRegionOutline(selectedCreature.daughter.start, selectedCreature.daughter.size);
+    }
+  }
+}
+
+function drawRegionOutline(start, size) {
+  for (let i = 0; i < size; i++) {
+    const idx = (start + i) % MEM_SIZE;
+    const x = (idx % COLS) * CELL;
+    const y = Math.floor(idx / COLS) * CELL;
+    // 単純に各セルの上下左右を太枠で
+    if (i === 0 || i === size - 1) ctx.strokeRect(x+0.5, y+0.5, CELL-1, CELL-1);
+  }
+  // 全体の囲み
+  const sx = (start % COLS) * CELL;
+  const sy = Math.floor(start / COLS) * CELL;
+  ctx.strokeRect(sx-0.5, sy-0.5, CELL+1, CELL+1);
+  const ex = ((start+size-1) % COLS) * CELL;
+  const ey = Math.floor((start+size-1) / COLS) * CELL;
+  ctx.strokeRect(ex-0.5, ey-0.5, CELL+1, CELL+1);
+}
+
+// ============================================================
+// UI 更新
+// ============================================================
+function updateUI() {
+  document.getElementById('stat-cycle').textContent = cycle.toLocaleString();
+  document.getElementById('stat-gen').textContent = generationMax;
+  document.getElementById('stat-pop').textContent = creatures.length;
+  document.getElementById('stat-births').textContent = totalBirths.toLocaleString();
+  document.getElementById('stat-deaths').textContent = totalDeaths.toLocaleString();
+  document.getElementById('stat-mut').textContent = mutations.toLocaleString();
+  document.getElementById('stat-mem').textContent = (memoryUsage() * 100).toFixed(0) + '%';
+
+  // ラベル別カウント
+  let cSelf = 0, cPar = 0, cDeg = 0;
+  for (const c of creatures) {
+    if (c.label === 'self') cSelf++;
+    else if (c.label === 'parasite') cPar++;
+    else if (c.label === 'degenerate') cDeg++;
+  }
+  document.getElementById('stat-self').textContent = cSelf;
+  document.getElementById('stat-parasite').textContent = cPar;
+  document.getElementById('stat-degen').textContent = cDeg;
+  // 停滞インジケータ
+  const stagWrap = document.getElementById('stat-stagnation-wrap');
+  if (stagnationCounter > 500 || stagnationKills > 0 || stagnationResets > 0) {
+    stagWrap.style.display = '';
+    document.getElementById('stat-stagnation').textContent = stagnationCounter;
+    document.getElementById('stat-stag-kills').textContent = stagnationKills;
+    document.getElementById('stat-stag-resets').textContent = stagnationResets;
+  } else {
+    stagWrap.style.display = 'none';
+  }
+
+  // genome 一覧 (ラベル別 top N)
+  // genome のラベルは「その genome を持つ最新の個体のラベル」を採用
+  const labelByKey = new Map();
+  for (const c of creatures) {
+    if (!labelByKey.has(c.genomeKey)) labelByKey.set(c.genomeKey, c.label);
+  }
+  const byLabel = { self: [], parasite: [], degenerate: [], unknown: [] };
+  for (const g of genomes.values()) {
+    if (g.count <= 0) continue;  // 絶滅した genome は一覧から除外 (系統樹用に保存はされている)
+    const lab = labelByKey.get(g.key) || g.label || 'unknown';
+    if (byLabel[lab]) byLabel[lab].push({ g, lab });
+  }
+  for (const key of Object.keys(byLabel)) {
+    byLabel[key].sort((a,b) => b.g.count - a.g.count);
+  }
+  const LIMITS = { self: 8, parasite: 10, degenerate: 4, unknown: 2 };
+  const list = document.getElementById('creature-list');
+  const selKey = selectedCreature ? selectedCreature.genomeKey : null;
+  const sections = [];
+  for (const lab of ['self', 'parasite', 'degenerate', 'unknown']) {
+    const items = byLabel[lab].slice(0, LIMITS[lab]);
+    if (items.length === 0) continue;
+    sections.push(`<div class="list-header" style="color:${LABEL_COLORS[lab]}">${LABEL_NAMES[lab]} (${byLabel[lab].length})</div>`);
+    sections.push(items.map(({ g, lab: l }) => `
+      <div class="creature-row${g.key === selKey ? ' selected' : ''}" data-key="${g.key}">
+        <span class="cid" style="color:${g.color}">●</span>
+        <span class="tag" style="color:${LABEL_COLORS[l]}">${LABEL_NAMES[l]}</span>
+        <span>len=${g.length}</span>
+        <span class="meta">×${g.count}</span>
+        <span class="meta">g${g.gen}</span>
+        <span class="meta">#${g.hash.toString(16).slice(0,4)}</span>
+      </div>`).join(''));
+  }
+  list.innerHTML = sections.join('');
+  for (const row of list.querySelectorAll('.creature-row')) {
+    row.addEventListener('click', () => {
+      const key = row.dataset.key;
+      const target = creatures.find(c => c.genomeKey === key);
+      selectedCreature = target || null;
+      updateInspector();
+      updateUI();
+    });
+  }
+  updateInspector();
+}
+
+function genomeToText(c) {
+  // 命令名のリスト + 数値配列
+  const ops = [];
+  for (let i = 0; i < c.region.size; i++) {
+    const b = mem[(c.region.start + i) % MEM_SIZE];
+    ops.push(OP_NAMES[b] || `?${b}`);
+  }
+  const bytes = [];
+  for (let i = 0; i < c.region.size; i++) {
+    bytes.push(mem[(c.region.start + i) % MEM_SIZE]);
+  }
+  const lines = [];
+  const totalCyc = c.insideCycles + c.outsideCycles;
+  const outsideRatio = totalCyc > 0 ? (c.outsideCycles / totalCyc * 100).toFixed(1) : '0.0';
+  lines.push(`# id=${c.id} gen=${c.generation} len=${c.region.size} reg=${c.region.start}..${(c.region.start + c.region.size - 1) % MEM_SIZE}`);
+  lines.push(`# label=${c.label} (${LABEL_NAMES[c.label]})  outside_ratio=${outsideRatio}% (${c.outsideCycles}/${totalCyc})`);
+  lines.push(`# age=${c.age} errors=${c.errors} reproductions=${c.reproductions}`);
+  lines.push(`# ip=${c.ip} (rel ${(c.ip - c.region.start + MEM_SIZE) % MEM_SIZE}) ax=${c.ax} bx=${c.bx} cx=${c.cx} dx=${c.dx}`);
+  lines.push(`# stack=[${c.stack.join(', ')}]`);
+  lines.push(`# hash=${c.genomeHash.toString(16)}`);
+  lines.push('');
+  lines.push('# rel  byte  op');
+  for (let i = 0; i < ops.length; i++) {
+    const marker = ((c.region.start + i) % MEM_SIZE === c.ip) ? ' ← IP' : '';
+    lines.push(`${String(i).padStart(4)}  ${String(bytes[i]).padStart(3)}  ${ops[i]}${marker}`);
+  }
+  lines.push('');
+  lines.push('# raw bytes:');
+  lines.push('[' + bytes.join(',') + ']');
+  return lines.join('\n');
+}
+
+function updateInspector() {
+  const panel = document.getElementById('inspect-panel');
+  const info = document.getElementById('inspect-info');
+  const ta = document.getElementById('inspect-genome');
+  if (!selectedCreature || !creatures.includes(selectedCreature)) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+  const c = selectedCreature;
+  const ipRel = (c.ip - c.region.start + MEM_SIZE) % MEM_SIZE;
+  const totalCyc = c.insideCycles + c.outsideCycles;
+  const outsideRatio = totalCyc > 0 ? (c.outsideCycles / totalCyc * 100).toFixed(1) : '0.0';
+  info.innerHTML = `
+    <div><span class="k">${t('inspect.label')}</span> <span style="color:${LABEL_COLORS[c.label]};font-weight:bold;">${labelName(c.label)}</span>　<span class="k">${t('inspect.parasite_ratio')}</span> <span class="v">${outsideRatio}%</span> <span class="k">${t('inspect.outside_total', { out: c.outsideCycles, tot: totalCyc })}</span></div>
+    <div><span class="k">id</span> <span class="v">${c.id}</span>　<span class="k">gen</span> <span class="v">${c.generation}</span>　<span class="k">len</span> <span class="v">${c.region.size}</span></div>
+    <div><span class="k">region</span> <span class="v">${c.region.start}..${(c.region.start + c.region.size - 1) % MEM_SIZE}</span></div>
+    <div><span class="k">ip</span> <span class="v">${c.ip}</span> <span class="k">(rel</span> <span class="v">${ipRel}</span><span class="k">)</span></div>
+    <div><span class="k">ax</span> <span class="v">${c.ax}</span>　<span class="k">bx</span> <span class="v">${c.bx}</span>　<span class="k">cx</span> <span class="v">${c.cx}</span>　<span class="k">dx</span> <span class="v">${c.dx}</span></div>
+    <div><span class="k">age</span> <span class="v">${c.age}</span>　<span class="k">err</span> <span class="v">${c.errors}</span>　<span class="k">repro</span> <span class="v">${c.reproductions}</span></div>
+    <div><span class="k">daughter</span> <span class="v">${c.daughter ? c.daughter.start + '..' + (c.daughter.start + c.daughter.size - 1) : '—'}</span></div>
+    <div><span class="k">parent</span> <span class="v">${c.parentId !== null ? '#' + c.parentId : '—'}</span></div>
+  `;
+  // 系統樹 (genome 単位)
+  const chain = genomeLineage(c.genomeKey);
+  if (chain.length > 0) {
+    const lines = chain.map((g, i) => {
+      const tag = (i === chain.length - 1 && !g.parentKey) ? t('inspect.ancestor_tag') : (i === 0 ? t('inspect.self_tag') : '');
+      const cmpClass = comparedGenomes.includes(g.key) ? ' compared' : '';
+      return `<div class="lineage-row${cmpClass}" data-key="${g.key}" title="${t('tooltip.lineage_row')}">
+        <span class="meta">${i === 0 ? '▸' : ' '}</span>
+        <span style="color:${LABEL_COLORS[g.label]};font-weight:600;">${LABEL_NAMES[g.label]}</span>
+        <span class="meta">len=${g.length}</span>
+        <span class="meta">g${g.gen}</span>
+        <span class="meta">#${g.hash.toString(16).slice(0,4)}</span>
+        <span class="meta">×${g.count}</span>
+        <span class="meta">${tag}</span>
+      </div>`;
+    }).join('');
+    info.innerHTML += `<div class="lineage"><div class="lineage-title">${t('inspect.lineage_title', { n: chain.length })}</div>${lines}</div>`;
+  }
+  ta.value = genomeToText(c);
+  // 系統行: クリックで比較追加/削除、Shift+クリックで textarea に展開
+  for (const row of info.querySelectorAll('.lineage-row[data-key]')) {
+    row.addEventListener('click', (e) => {
+      const key = row.dataset.key;
+      if (e.shiftKey) {
+        const g = genomes.get(key);
+        if (g && g.bytes) showGenomeContent(g);
+      } else {
+        toggleCompare(key);
+      }
+    });
+  }
+}
+
+// ============================================================
+// ゲノム比較ビュー
+// ============================================================
+const comparedGenomes = []; // 挿入順を保持して左から並べる
+
+function toggleCompare(key) {
+  const i = comparedGenomes.indexOf(key);
+  if (i >= 0) {
+    comparedGenomes.splice(i, 1);
+  } else {
+    comparedGenomes.push(key);
+    if (comparedGenomes.length > 6) comparedGenomes.shift();
+  }
+  renderComparison();
+  updateInspector();
+}
+
+// LCS (Longest Common Subsequence) を使って 2 シーケンスの編集スクリプトを作る。
+// 戻り値は [{type: 'same'|'sub'|'del'|'ins', ai, bi}]
+// 同じ rel 位置で a と b の両方が違うとき、del + ins を sub にまとめる(後処理)。
+function diffLCS(a, b) {
+  const m = a.length, n = b.length;
+  // dp テーブル (Int32 でメモリ節約)
+  const dp = new Int32Array((m + 1) * (n + 1));
+  const w = n + 1;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i-1] === b[j-1]) dp[i * w + j] = dp[(i-1) * w + (j-1)] + 1;
+      else dp[i * w + j] = Math.max(dp[(i-1) * w + j], dp[i * w + (j-1)]);
+    }
+  }
+  // backtrack
+  const ops = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i-1] === b[j-1]) {
+      ops.push({ type: 'same', ai: i-1, bi: j-1 });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i * w + (j-1)] >= dp[(i-1) * w + j])) {
+      ops.push({ type: 'ins', ai: -1, bi: j-1 });
+      j--;
+    } else {
+      ops.push({ type: 'del', ai: i-1, bi: -1 });
+      i--;
+    }
+  }
+  ops.reverse();
+  // 連続する del と ins を sub に統合 (1対1 の置換)
+  const merged = [];
+  for (let k = 0; k < ops.length; k++) {
+    const o = ops[k];
+    if (o.type === 'del' && k + 1 < ops.length && ops[k+1].type === 'ins') {
+      merged.push({ type: 'sub', ai: o.ai, bi: ops[k+1].bi });
+      k++;
+    } else if (o.type === 'ins' && k + 1 < ops.length && ops[k+1].type === 'del') {
+      merged.push({ type: 'sub', ai: ops[k+1].ai, bi: o.bi });
+      k++;
+    } else {
+      merged.push(o);
+    }
+  }
+  return merged;
+}
+
+function renderByteCell(g, idx, cls) {
+  if (idx < 0) return `<span class="compare-byte empty">    ·     · ·</span>`;
+  const b = g.bytes[idx];
+  const opName = OP_NAMES[b] || ('?' + b);
+  return `<span class="compare-byte ${cls}">${String(idx).padStart(3)} ${String(b).padStart(3)} ${opName}</span>`;
+}
+
+function colHeaderHtml(g) {
+  return `<div class="compare-col-header" data-key="${g.key}" title="${t('tooltip.compare_col')}">
+    <span style="color:${LABEL_COLORS[g.label]};font-weight:600;">${LABEL_NAMES[g.label]}</span>
+    <span>len=${g.length}</span>
+    <span style="color:#666;">g${g.gen}</span>
+    <span style="color:#666;">#${g.hash.toString(16).slice(0,4)}</span>
+  </div>`;
+}
+
+function renderComparison() {
+  const panel = document.getElementById('comparison-panel');
+  const content = document.getElementById('comparison-content');
+  const items = comparedGenomes
+    .map(k => genomes.get(k))
+    .filter(g => g && g.bytes);
+  if (items.length === 0) {
+    panel.style.display = 'none';
+    content.innerHTML = '';
+    return;
+  }
+  panel.style.display = '';
+
+  if (items.length === 2) {
+    // 2 ゲノム比較: LCS でアラインメントして git diff 風表示
+    const [A, B] = items;
+    const ops = diffLCS(Array.from(A.bytes), Array.from(B.bytes));
+    let stats = { same: 0, sub: 0, del: 0, ins: 0 };
+    let col1 = colHeaderHtml(A);
+    let col2 = colHeaderHtml(B);
+    for (const o of ops) {
+      stats[o.type]++;
+      if (o.type === 'same') {
+        col1 += renderByteCell(A, o.ai, 'same');
+        col2 += renderByteCell(B, o.bi, 'same');
+      } else if (o.type === 'sub') {
+        col1 += renderByteCell(A, o.ai, 'sub');
+        col2 += renderByteCell(B, o.bi, 'sub');
+      } else if (o.type === 'del') {
+        col1 += renderByteCell(A, o.ai, 'del');
+        col2 += renderByteCell(null, -1, 'empty');
+      } else { // ins
+        col1 += renderByteCell(null, -1, 'empty');
+        col2 += renderByteCell(B, o.bi, 'ins');
+      }
+    }
+    const statsLine = `<div class="diff-stats">
+      <span class="ds-same">${t('diff.same')} ${stats.same}</span>
+      <span class="ds-sub">${t('diff.sub')} ${stats.sub}</span>
+      <span class="ds-del">${t('diff.del')} ${stats.del}</span>
+      <span class="ds-ins">${t('diff.ins')} ${stats.ins}</span>
+    </div>`;
+    content.innerHTML = statsLine +
+      `<div class="compare-grid">
+        <div class="compare-col">${col1}</div>
+        <div class="compare-col">${col2}</div>
+      </div>`;
+  } else {
+    // 1 または 3+ ゲノム: 既存の 1:1 表示
+    const maxLen = Math.max(...items.map(g => g.length));
+    const cols = items.map(g => {
+      let html = colHeaderHtml(g);
+      for (let i = 0; i < maxLen; i++) {
+        if (i >= g.length) {
+          html += `<span class="compare-byte missing">${String(i).padStart(3)}   ·  —</span>`;
+          continue;
+        }
+        const b = g.bytes[i];
+        let sameAcross = true;
+        if (items.length > 1) {
+          for (const g2 of items) {
+            if (g2 === g) continue;
+            if (i >= g2.length || g2.bytes[i] !== b) { sameAcross = false; break; }
+          }
+        }
+        const cls = items.length === 1 ? '' : (sameAcross ? 'same' : 'diff');
+        html += renderByteCell(g, i, cls);
+      }
+      return `<div class="compare-col">${html}</div>`;
+    });
+    content.innerHTML = `<div class="compare-grid">${cols.join('')}</div>`;
+  }
+  // 列ヘッダクリックで textarea 展開
+  for (const h of content.querySelectorAll('.compare-col-header[data-key]')) {
+    h.addEventListener('click', () => {
+      const g = genomes.get(h.dataset.key);
+      if (g && g.bytes) showGenomeContent(g);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {});
+// 初期化後に紐付けるため click ハンドラは末尾で
+function bindCompareButtons() {
+  const c = document.getElementById('btn-clear-compare');
+  if (c) c.addEventListener('click', () => {
+    comparedGenomes.length = 0;
+    renderComparison();
+    updateInspector();
+  });
+  const ex = document.getElementById('btn-compare-export');
+  if (ex) ex.addEventListener('click', () => {
+    const items = comparedGenomes.map(k => genomes.get(k)).filter(g => g && g.bytes);
+    if (items.length === 0) return;
+    const lines = [];
+    lines.push(t('compare.header'));
+    lines.push('# ' + items.map(g => `len=${g.length} #${g.hash.toString(16).slice(0,4)} ${labelName(g.label)}`).join('  |  '));
+    lines.push('');
+    if (items.length === 2) {
+      const [A, B] = items;
+      const ops = diffLCS(Array.from(A.bytes), Array.from(B.bytes));
+      let st = { same: 0, sub: 0, del: 0, ins: 0 };
+      for (const o of ops) st[o.type]++;
+      lines.push(`# ${t('diff.same')} ${st.same}  ${t('diff.sub')} ${st.sub}  ${t('diff.del')} ${st.del}  ${t('diff.ins')} ${st.ins}`);
+      lines.push('');
+      const cellA = (i) => i < 0 ? '   .   .  .       ' : `${String(i).padStart(3)} ${String(A.bytes[i]).padStart(3)}  ${(OP_NAMES[A.bytes[i]]||'?').padEnd(8)}`;
+      const cellB = (i) => i < 0 ? '   .   .  .       ' : `${String(i).padStart(3)} ${String(B.bytes[i]).padStart(3)}  ${(OP_NAMES[B.bytes[i]]||'?').padEnd(8)}`;
+      const mark = { same: '   ', sub: ' ≠ ', del: ' < ', ins: ' > ' };
+      for (const o of ops) {
+        lines.push(`${cellA(o.ai)}${mark[o.type]}${cellB(o.bi)}`);
+      }
+    } else {
+      const maxLen = Math.max(...items.map(g => g.length));
+      for (let i = 0; i < maxLen; i++) {
+        const row = items.map(g => {
+          if (i >= g.length) return '         —      ';
+          const b = g.bytes[i];
+          return `${String(b).padStart(2)} ${(OP_NAMES[b] || '?').padEnd(8)}`;
+        }).join(' | ');
+        lines.push(`${String(i).padStart(3)}: ${row}`);
+      }
+    }
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      const btn = document.getElementById('btn-compare-export');
+      const orig = btn.textContent;
+      btn.textContent = t('btn.copied');
+      setTimeout(() => btn.textContent = orig, 1200);
+    });
+  });
+}
+bindCompareButtons();
+
+function showGenomeContent(g) {
+  const ta = document.getElementById('inspect-genome');
+  const lines = [];
+  lines.push(t('genome.header_view'));
+  lines.push(`# hash=${g.hash.toString(16)} len=${g.length} label=${g.label} (${labelName(g.label)}) gen=${g.gen}`);
+  lines.push(t('genome.firstseen', { fs: g.firstSeen, ts: g.totalSeen, peak: g.peakCount, cur: g.count }));
+  if (g.parentKey) {
+    const p = genomes.get(g.parentKey);
+    const info = p ? `len=${p.length} #${p.hash.toString(16).slice(0,4)} (${labelName(p.label)})` : t('genome.parent_deleted');
+    lines.push(t('genome.parent_some', { info }));
+  } else {
+    lines.push(t('genome.parent_none'));
+  }
+  lines.push('');
+  lines.push('# rel  byte  op');
+  for (let i = 0; i < g.bytes.length; i++) {
+    const b = g.bytes[i];
+    lines.push(`${String(i).padStart(4)}  ${String(b).padStart(3)}  ${OP_NAMES[b] || ('?' + b)}`);
+  }
+  lines.push('');
+  lines.push('# raw bytes:');
+  lines.push('[' + Array.from(g.bytes).join(',') + ']');
+  ta.value = lines.join('\n');
+}
+
+function buildLegend() {
+  const legend = document.getElementById('legend');
+  const groups = [
+    ['NOP0','NOP1','ZERO','OR1','SHL'],
+    ['INC_A','INC_B','INC_C','DEC_C','IFZ','IFNZ','SUB_BA'],
+    ['MOV_AB','PUSH_A','POP_A'],
+    ['JMP_F','JMP_B','CALL','RET'],
+    ['ADR_F','ADR_B','MAL','DIVIDE']
+  ];
+  const flat = groups.flat();
+  legend.innerHTML = flat.map(name => {
+    const code = OP[name];
+    return `<div class="legend-item" data-op="${code}">
+      <div class="legend-swatch" style="background:${OP_COLORS[code]}"></div>
+      <span>${name}</span>
+    </div>`;
+  }).join('');
+  legendSwatches = new Array(NUM_OPS);
+  legend.querySelectorAll('.legend-item').forEach(el => {
+    const code = parseInt(el.dataset.op, 10);
+    legendSwatches[code] = el.querySelector('.legend-swatch');
+  });
+}
+
+// ============================================================
+// 入力
+// ============================================================
+document.getElementById('btn-play').addEventListener('click', () => {
+  running = !running;
+  document.getElementById('btn-play').textContent = t(running ? 'btn.pause' : 'btn.play');
+});
+document.getElementById('btn-step').addEventListener('click', () => {
+  if (running) {
+    running = false;
+    document.getElementById('btn-play').textContent = t('btn.play');
+  }
+  tick();
+  render();
+  updateUI();
+});
+document.getElementById('btn-reset').addEventListener('click', () => {
+  init();
+});
+document.getElementById('btn-clear').addEventListener('click', () => {
+  init();
+  mutations = 0;
+});
+
+const speedSlider = document.getElementById('ctrl-speed');
+const speedVal = document.getElementById('val-speed');
+speedSlider.addEventListener('input', e => {
+  cyclesPerFrame = parseInt(e.target.value);
+  speedVal.textContent = cyclesPerFrame + ' ' + t('unit.tick_per_frame');
+});
+
+const copySlider = document.getElementById('ctrl-copy');
+const copyVal = document.getElementById('val-copy');
+function updateCopyRate() {
+  const v = parseInt(copySlider.value);
+  copyErrorRate = v === 0 ? 0 : Math.pow(10, -5 + v/50);
+  copyVal.textContent = copyErrorRate === 0 ? '0' : copyErrorRate.toExponential(1);
+}
+copySlider.addEventListener('input', updateCopyRate);
+
+const cosmicSlider = document.getElementById('ctrl-cosmic');
+const cosmicVal = document.getElementById('val-cosmic');
+function updateCosmicRate() {
+  const v = parseInt(cosmicSlider.value);
+  cosmicRate = v === 0 ? 0 : Math.pow(10, -7 + v/50);
+  cosmicVal.textContent = cosmicRate === 0 ? '0' : cosmicRate.toExponential(1);
+}
+cosmicSlider.addEventListener('input', updateCosmicRate);
+
+// クリックで個体選択
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+  const col = Math.floor(cx / CELL);
+  const row = Math.floor(cy / CELL);
+  const addr = row * COLS + col;
+  if (addr < 0 || addr >= MEM_SIZE) return;
+  const id = owner[addr];
+  if (id === -1) { selectedCreature = null; updateInspector(); return; }
+  selectedCreature = creatures.find(c => c.id === id) || null;
+  updateInspector();
+});
+
+document.getElementById('btn-copy-genome').addEventListener('click', () => {
+  const ta = document.getElementById('inspect-genome');
+  if (!ta.value) return;
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = document.getElementById('btn-copy-genome');
+    const orig = btn.textContent;
+    btn.textContent = t('btn.copied');
+    setTimeout(() => btn.textContent = orig, 1200);
+  }).catch(() => {
+    // fallback
+    document.execCommand && document.execCommand('copy');
+  });
+});
+
+document.getElementById('btn-deselect').addEventListener('click', () => {
+  selectedCreature = null;
+  updateInspector();
+  updateUI();
+});
+
+// ============================================================
+// カスタムゲノム注入
+// ============================================================
+const SHRUNK_31 = [1,26,0,13,25,0,1,13,18,17,11,7,7,7,27,16,18,1,12,5,6,8,9,21,0,22,0,2,1,0,28];
+// 24バイト版: 自然進化で出現した最小級の自立体 (INC_C × 2 が連続)
+const SHRUNK_24 = [1,26,0,13,25,1,13,18,17,11,7,7,27,16,18,1,12,5,6,8,10,22,0,28];
+// 14バイト寄生体: 自前で MAL も持たない超ミニマル寄生体 (host 依存)
+const PARASITE_14 = [0,1,1,26,1,13,25,0,9,0,21,1,0,28];
+
+function parseGenomeInput(text) {
+  text = text.trim();
+  if (!text) return null;
+  // JSON 配列形式: [1, 2, 3]
+  if (text.startsWith('[')) {
+    try {
+      const arr = JSON.parse(text);
+      if (Array.isArray(arr) && arr.every(x => Number.isInteger(x) && x >= 0 && x < NUM_OPS)) {
+        return arr;
+      }
+    } catch (e) {}
+  }
+  // 命令名 or 数字のカンマ/空白区切り (コメント行と末尾コメントを除去)
+  const cleaned = text.split('\n').filter(l => !l.trim().startsWith('#')).join(' ');
+  const parts = cleaned.split(/[\s,]+/).filter(s => s);
+  const nums = [];
+  for (const p of parts) {
+    if (/^\d+$/.test(p)) {
+      const n = parseInt(p, 10);
+      if (n >= 0 && n < NUM_OPS) { nums.push(n); continue; }
+      return null;
+    }
+    if (OP[p] !== undefined) { nums.push(OP[p]); continue; }
+    return null;
+  }
+  return nums.length ? nums : null;
+}
+
+function injectGenome(bytes) {
+  if (!bytes || bytes.length < MIN_DAUGHTER) {
+    return { ok: false, msg: t('inject.too_short', { len: bytes ? bytes.length : 0, min: MIN_DAUGHTER }) };
+  }
+  if (bytes.length > MAX_DAUGHTER) {
+    return { ok: false, msg: t('inject.too_long', { len: bytes.length, max: MAX_DAUGHTER }) };
+  }
+  const start = findFreeRegion(bytes.length);
+  if (start < 0) {
+    return { ok: false, msg: t('inject.no_space') };
+  }
+  for (let i = 0; i < bytes.length; i++) mem[start + i] = bytes[i];
+  const c = newCreature(start, bytes.length, 0, null);
+  creatures.push(c);
+  totalBirths++;
+  return { ok: true, msg: t('inject.success', { id: c.id, len: bytes.length, label: labelName(c.label), start }) };
+}
+
+document.getElementById('btn-inject').addEventListener('click', () => {
+  const ta = document.getElementById('custom-genome');
+  const status = document.getElementById('inject-status');
+  const bytes = parseGenomeInput(ta.value);
+  if (!bytes) {
+    status.textContent = t('inject.parse_fail');
+    status.className = 'err';
+    return;
+  }
+  const res = injectGenome(bytes);
+  status.textContent = res.msg;
+  status.className = res.ok ? 'ok' : 'err';
+});
+
+document.getElementById('btn-sample-ancestor').addEventListener('click', () => {
+  document.getElementById('custom-genome').value = '[' + ANCESTOR.join(',') + ']';
+});
+document.getElementById('btn-sample-shrunk').addEventListener('click', () => {
+  document.getElementById('custom-genome').value = '[' + SHRUNK_31.join(',') + ']';
+});
+document.getElementById('btn-sample-24').addEventListener('click', () => {
+  document.getElementById('custom-genome').value = '[' + SHRUNK_24.join(',') + ']';
+});
+document.getElementById('btn-sample-parasite14').addEventListener('click', () => {
+  document.getElementById('custom-genome').value = '[' + PARASITE_14.join(',') + ']';
+});
+
+// ============================================================
+// 殿堂入り (Hall of Fame)
+// ============================================================
+function loadHall() {
+  try {
+    const s = localStorage.getItem(HALL_KEY);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) hallOfFame = parsed;
+    }
+  } catch (e) {
+    hallOfFame = [];
+  }
+}
+function saveHall() {
+  try { localStorage.setItem(HALL_KEY, JSON.stringify(hallOfFame)); } catch (e) {}
+}
+
+function tryAddToHall(c) {
+  const lifespan = cycle - c.birthCycle;
+  if (lifespan < HALL_LIFESPAN_THRESHOLD) return;
+  if (c.reproductions < HALL_REPRO_THRESHOLD) return;
+  if (c.region.size > HALL_MAX_LEN) return;  // 祖先サイズ近辺は除外
+  const bytes = new Array(c.region.size);
+  for (let i = 0; i < c.region.size; i++) {
+    bytes[i] = mem[(c.region.start + i) % MEM_SIZE];
+  }
+  const hashHex = c.genomeHash.toString(16);
+  // 同じ hash & length は更新
+  const existing = hallOfFame.find(h => h.hashHex === hashHex && h.length === c.region.size);
+  if (existing) {
+    if (lifespan > existing.lifespan || c.reproductions > existing.reproductions) {
+      existing.lifespan = Math.max(existing.lifespan, lifespan);
+      existing.age = Math.max(existing.age || 0, c.age);
+      existing.reproductions = Math.max(existing.reproductions, c.reproductions);
+      existing.savedAt = Date.now();
+      saveHall();
+    }
+    return;
+  }
+  hallOfFame.push({
+    hashHex,
+    length: c.region.size,
+    label: c.label,
+    gen: c.generation,
+    age: c.age,
+    lifespan,
+    reproductions: c.reproductions,
+    bytes,
+    savedAt: Date.now(),
+  });
+  // 上限を超えたら lifespan*repro の低いものから削除
+  if (hallOfFame.length > HALL_MAX_ENTRIES) {
+    hallOfFame.sort((a, b) => (b.lifespan * b.reproductions) - (a.lifespan * a.reproductions));
+    hallOfFame.length = HALL_MAX_ENTRIES;
+  }
+  saveHall();
+  renderHall();
+}
+
+function renderHall() {
+  const list = document.getElementById('hall-list');
+  if (!list) return;
+  const countEl = document.getElementById('hall-count');
+  if (countEl) countEl.textContent = hallOfFame.length;
+  if (hallOfFame.length === 0) {
+    list.innerHTML = `<div class="help" style="padding:6px;">${t('hall.empty')}</div>`;
+    return;
+  }
+  // lifespan × reproductions のスコア順 (進化的成功度)
+  const sorted = [...hallOfFame].sort((a, b) => ((b.lifespan||0) * b.reproductions) - ((a.lifespan||0) * a.reproductions));
+  list.innerHTML = sorted.map((h, i) => `
+    <div class="hall-row" data-idx="${hallOfFame.indexOf(h)}">
+      <span style="color:${LABEL_COLORS[h.label] || '#999'};font-weight:600;">${LABEL_NAMES[h.label] || '?'}</span>
+      <span>len=${h.length}</span>
+      <span class="meta">life=${h.lifespan || h.age}</span>
+      <span class="meta">×${h.reproductions}</span>
+      <span class="meta">g${h.gen}</span>
+      <span class="meta">#${h.hashHex.slice(0,4)}</span>
+      <span class="hall-actions">
+        <button class="hall-inject" title="${t('tooltip.hall_inject')}" data-idx="${hallOfFame.indexOf(h)}">▶</button>
+        <button class="hall-show" title="${t('tooltip.hall_show')}" data-idx="${hallOfFame.indexOf(h)}">📋</button>
+        <button class="hall-del danger" title="${t('tooltip.hall_del')}" data-idx="${hallOfFame.indexOf(h)}">×</button>
+      </span>
+    </div>`).join('');
+  // イベント
+  for (const btn of list.querySelectorAll('.hall-inject')) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const h = hallOfFame[parseInt(btn.dataset.idx)];
+      if (!h) return;
+      const res = injectGenome(h.bytes);
+      const status = document.getElementById('inject-status');
+      if (status) {
+        status.textContent = res.msg;
+        status.className = res.ok ? 'ok' : 'err';
+      }
+    });
+  }
+  for (const btn of list.querySelectorAll('.hall-show')) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const h = hallOfFame[parseInt(btn.dataset.idx)];
+      if (!h) return;
+      document.getElementById('custom-genome').value = '[' + h.bytes.join(',') + ']';
+    });
+  }
+  for (const btn of list.querySelectorAll('.hall-del')) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      hallOfFame.splice(idx, 1);
+      saveHall();
+      renderHall();
+    });
+  }
+}
+
+// クリアして単独投入: シミュレーション全体をリセットし、テキストの個体だけを単独でスタートさせる
+document.getElementById('btn-inject-fresh').addEventListener('click', () => {
+  const ta = document.getElementById('custom-genome');
+  const status = document.getElementById('inject-status');
+  const bytes = parseGenomeInput(ta.value);
+  if (!bytes) {
+    status.textContent = t('inject.parse_fail');
+    status.className = 'err';
+    return;
+  }
+  if (bytes.length < MIN_DAUGHTER || bytes.length > MAX_DAUGHTER) {
+    status.textContent = t('inject.out_of_range', { min: MIN_DAUGHTER, max: MAX_DAUGHTER });
+    status.className = 'err';
+    return;
+  }
+  // メモリと個体を完全初期化(祖先を置かないバージョン)
+  mem.fill(0);
+  owner.fill(-1);
+  creatures = [];
+  nextId = 1;
+  cycle = 0;
+  totalBirths = 0;
+  totalDeaths = 0;
+  mutations = 0;
+  generationMax = 0;
+  genomes.clear();
+  selectedCreature = null;
+  stagnationCounter = 0;
+  lastTotalBirths = 0;
+  stagnationKills = 0;
+  stagnationResets = 0;
+  for (let i = 0; i < MEM_SIZE; i++) mem[i] = Math.floor(Math.random() * NUM_OPS);
+  // 中央に投入
+  const start = Math.floor((MEM_SIZE - bytes.length) / 2);
+  for (let i = 0; i < bytes.length; i++) mem[start + i] = bytes[i];
+  const c = newCreature(start, bytes.length, 0, null);
+  creatures.push(c);
+  totalBirths++;
+  status.textContent = t('inject.fresh_done', { id: c.id, len: bytes.length, label: labelName(c.label), start });
+  status.className = 'ok';
+});
+
+// ============================================================
+// 起動
+// ============================================================
+init();
+updateCopyRate();
+updateCosmicRate();
+buildLegend();
+loadHall();
+renderHall();
+
+// i18n 初期化 (静的テキストの置換と言語スイッチャーのバインド)
+setLang(lang); // applyStaticI18n + 動的ラベル/単位の更新まで一括で行う
+const langSwitch = document.getElementById('lang-switch');
+if (langSwitch) {
+  langSwitch.value = lang;
+  langSwitch.addEventListener('change', e => setLang(e.target.value));
+}
+
+// Hall of Fame コントロール
+document.getElementById('btn-hall-clear').addEventListener('click', () => {
+  if (!confirm(t('hall.confirm_clear'))) return;
+  hallOfFame = [];
+  saveHall();
+  renderHall();
+});
+document.getElementById('btn-hall-export').addEventListener('click', () => {
+  const json = JSON.stringify(hallOfFame, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    const btn = document.getElementById('btn-hall-export');
+    const orig = btn.textContent;
+    btn.textContent = t('btn.copied');
+    setTimeout(() => btn.textContent = orig, 1200);
+  });
+});
+document.getElementById('btn-hall-import').addEventListener('click', () => {
+  const text = prompt(t('hall.prompt_import'));
+  if (!text) return;
+  try {
+    const arr = JSON.parse(text);
+    if (Array.isArray(arr)) {
+      // マージ (重複は最新で更新)
+      for (const h of arr) {
+        if (!h.hashHex || !h.bytes) continue;
+        const existing = hallOfFame.find(e => e.hashHex === h.hashHex && e.length === h.length);
+        if (existing) {
+          if (h.age > existing.age) Object.assign(existing, h);
+        } else {
+          hallOfFame.push(h);
+        }
+      }
+      if (hallOfFame.length > HALL_MAX_ENTRIES) {
+        hallOfFame.sort((a, b) => b.age - a.age);
+        hallOfFame.length = HALL_MAX_ENTRIES;
+      }
+      saveHall();
+      renderHall();
+      alert(t('hall.import_ok', { n: hallOfFame.length }));
+    } else {
+      alert(t('hall.not_array'));
+    }
+  } catch (e) {
+    alert(t('hall.parse_fail', { msg: e.message }));
+  }
+});
+
+let lastUI = 0;
+let lastHueT = 0;
+function loop(t) {
+  if (running) {
+    for (let k = 0; k < cyclesPerFrame; k++) tick();
+  }
+  if (lastHueT === 0) lastHueT = t;
+  const dt = (t - lastHueT) / 1000;
+  lastHueT = t;
+  hueShift = (hueShift + HUE_SHIFT_PER_SEC * dt) % 360;
+  applyHueShift();
+  render();
+  if (t - lastUI > 200) {
+    updateUI();
+    lastUI = t;
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
