@@ -2,7 +2,9 @@
 
 > Built collaboratively with [Claude Opus 4.7](https://www.anthropic.com/news/claude-opus-4) via [Claude Code](https://www.anthropic.com/claude-code).
 
-A single-file, browser-based artificial life simulator inspired by **Tierra**, the seminal digital evolution system created by Thomas Ray in the early 1990s. Self-replicating programs written in a 32-instruction virtual machine compete for CPU time and memory; bit-flip mutations and natural selection drive open-ended evolution — parasites, hyper-parasites, and degenerate replicators all emerge unprompted.
+A browser-based artificial life simulator inspired by **Tierra**, the seminal digital evolution system created by Thomas Ray in the early 1990s. Self-replicating programs written in a 32-instruction virtual machine compete for CPU time and memory; bit-flip mutations and natural selection drive open-ended evolution — parasites, hyper-parasites, and degenerate replicators all emerge unprompted.
+
+The implementation is plain HTML / CSS / ES modules — no bundler, no `npm install`.
 
 **🔗 Live demo:** [asari-mtr.github.io/tierra](https://asari-mtr.github.io/tierra/)
 
@@ -35,7 +37,7 @@ This implementation faithfully reproduces the core dynamics (template-based addr
 | UI | Custom analyzer (`x11` clients) | Single-page HTML with canvas + DOM panels |
 | Stagnation rescue | None | Auto-cull + ancestor re-injection if no births for N ticks |
 | Comparison view | None | Side-by-side LCS-diff between any two genomes |
-| Distribution | Compiled C, multi-process | Single `index.html`, runs entirely client-side |
+| Distribution | Compiled C, multi-process | Plain HTML + ES modules, runs entirely client-side |
 
 ## Features
 
@@ -84,11 +86,30 @@ Templates are short `NOP0`/`NOP1` sequences; the search instructions (`JMP_*`, `
 
 ## Running locally
 
-No build step, no dependencies. Just open `index.html` in any modern browser, or:
+No build step, no dependencies. Because the code is split into ES modules, it must be served over HTTP rather than opened via `file://`:
 
 ```sh
 python3 -m http.server 8000
 # then visit http://localhost:8000/
+```
+
+## Project layout
+
+```
+index.html              Markup only (no inline CSS / JS)
+css/styles.css          All styles
+js/main.js              Entry point — wires DOM events and runs the main loop
+js/constants.js         Opcode table, VM/world configuration, ancestor & sample genomes
+js/state.js             Shared mutable simulation state (mem, owner, creatures, ...)
+js/i18n.js              ja/en dictionaries + translation helpers
+js/colors.js            Instruction palette + hue-shift logic
+js/vm.js                VM core: templates, memory allocation, step, reaper, tick
+js/creatures.js         Creature lifecycle: birth, classification, genome registry, lineage
+js/render.js            Canvas rendering
+js/ui.js                Stats / creature list / inspector / legend
+js/comparison.js        LCS-based genome comparison view
+js/inject.js            Custom genome parsing & injection
+js/hall.js              Hall-of-fame storage and UI
 ```
 
 ## License

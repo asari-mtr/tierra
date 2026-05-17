@@ -2,7 +2,9 @@
 
 > [Claude Opus 4.7](https://www.anthropic.com/news/claude-opus-4) と [Claude Code](https://www.anthropic.com/claude-code) を使って共同制作しました。
 
-Thomas Ray が 1990 年代初頭に作った **Tierra** にインスパイアされた、単一 HTML ファイルで動く人工生命シミュレーターです。32 命令の仮想機械語で書かれた自己複製プログラムが共有メモリ上で CPU 時間とメモリを奪い合い、コピー時のビット反転と自然選択によって寄生体・超寄生体・縮退レプリケーターなどが自然発生します。
+Thomas Ray が 1990 年代初頭に作った **Tierra** にインスパイアされた、ブラウザで動く人工生命シミュレーターです。32 命令の仮想機械語で書かれた自己複製プログラムが共有メモリ上で CPU 時間とメモリを奪い合い、コピー時のビット反転と自然選択によって寄生体・超寄生体・縮退レプリケーターなどが自然発生します。
+
+実装は素の HTML / CSS / ES modules のみ。バンドラ不要、`npm install` 不要です。
 
 **🔗 デモ:** [asari-mtr.github.io/tierra](https://asari-mtr.github.io/tierra/)
 
@@ -35,7 +37,7 @@ Tierra は Thomas S. Ray がダーウィン進化をデジタル基盤で再現�
 | UI | 専用解析クライアント (x11) | 単一 HTML + canvas + DOM パネル |
 | 停滞時の救済 | 無し | N tick 出産が無いと自動淘汰 + 祖先再注入 |
 | 比較ビュー | 無し | 任意の 2 ゲノム間で LCS 差分を `git diff` 風に表示 |
-| 配布形態 | コンパイル済み C, マルチプロセス | `index.html` 1 枚、完全クライアントサイド |
+| 配布形態 | コンパイル済み C, マルチプロセス | 素の HTML + ES modules、完全クライアントサイド |
 
 ## 機能
 
@@ -84,11 +86,30 @@ Tierra は Thomas S. Ray がダーウィン進化をデジタル基盤で再現�
 
 ## ローカル実行
 
-ビルド不要、依存ゼロ。`index.html` をブラウザで開くか、
+ビルド不要、依存ゼロ。ES modules で分割しているため、`file://` 直接オープンではなく HTTP サーバ経由で開いてください:
 
 ```sh
 python3 -m http.server 8000
 # http://localhost:8000/
+```
+
+## ファイル構成
+
+```
+index.html              マークアップのみ (インライン CSS / JS なし)
+css/styles.css          全スタイル
+js/main.js              エントリポイント — DOM イベント配線とメインループ
+js/constants.js         命令テーブル / VM・世界設定 / 祖先・サンプルゲノム
+js/state.js             共有のミュータブル状態 (mem, owner, creatures, ...)
+js/i18n.js              ja/en 辞書 + 翻訳ユーティリティ
+js/colors.js            命令カラーパレット + 色相シフト
+js/vm.js                VM コア: テンプレート / メモリ確保 / step / Reaper / tick
+js/creatures.js         個体ライフサイクル: 生成・分類・genome 登録・系統
+js/render.js            canvas 描画
+js/ui.js                統計 / 個体一覧 / 検査パネル / 凡例
+js/comparison.js        LCS ベースのゲノム比較ビュー
+js/inject.js            カスタムゲノムの解析と投入
+js/hall.js              殿堂入りのストレージと UI
 ```
 
 ## ライセンス
