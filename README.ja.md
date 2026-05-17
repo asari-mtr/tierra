@@ -8,6 +8,8 @@ Thomas Ray が 1990 年代初頭に作った **Tierra** にインスパイアさ
 
 **🌐 [English README](./README.md)**
 
+![Tierra screenshot](./og.png)
+
 ---
 
 ## 背景

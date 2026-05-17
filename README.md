@@ -8,6 +8,8 @@ A single-file, browser-based artificial life simulator inspired by **Tierra**, t
 
 **🌐 [日本語版 README](./README.ja.md)**
 
+![Tierra screenshot](./og.png)
+
 ---
 
 ## Background
